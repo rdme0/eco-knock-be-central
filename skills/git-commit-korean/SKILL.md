@@ -13,6 +13,7 @@ Before deciding commit boundaries:
 
 - Read the repository root `AGENTS.md` if it exists.
 - Read [references/commit-style.md](references/commit-style.md) before choosing final messages.
+- Read [references/gitmoji-cheatsheet.md](references/gitmoji-cheatsheet.md) when you need a broader set of emoji/type combinations or the change does not fit the core examples.
 
 Do not assume the current staged state is already correct.
 
@@ -77,15 +78,45 @@ Apply these rules:
 - Write the subject in Korean.
 - Use a single-line subject.
 - Match the repository pattern: optional emoji prefix, then `type: `, then a short Korean summary.
-- Prefer the observed types from history: `feat`, `refactor`, `test`, `remove`.
+- Prefer the observed types from history first, but use a more specific type when the change is clearly build, deploy, or rename oriented.
 - Keep the subject concrete and scoped to the actual change. Avoid vague summaries like `수정` or `변경`.
 - Describe the user-visible or reviewer-visible unit of change, not the low-level edit sequence.
+
+Choose the most specific matching pattern when possible:
+
+- dependency added: `:heavy_plus_sign: build:`
+- dependency upgraded: `:arrow_up: build:`
+- dependency downgraded: `:arrow_down: build:`
+- build script or toolchain change without dependency movement: `:hammer: build:`
+- deploy pipeline, release config, or runtime deployment wiring: `:rocket: deploy:`
+- directory move, file move, package move, class rename, or file rename: `:truck: rename:`
+- bug fix: `:bug: fix:`
+- urgent production-only fix: `:ambulance: hotfix:`
+- docs or usage guide change: `:memo: docs:`
+- CI workflow change: `:construction_worker: ci:`
+- CI repair to recover a broken pipeline: `:green_heart: ci:`
+- security hardening: `:lock: security:`
+- performance improvement: `:zap: perf:`
+- DB schema or migration change: `:card_file_box: db:`
+- chore or local tooling cleanup with no product effect: `:wrench: chore:`
+- new user-facing or system-facing behavior: `:sparkles: feat:`
+- behavior-preserving structure cleanup: `:recycle: refactor:`
+- test-only change: `:white_check_mark: test:`
+- removal only: `:fire: remove:`
 
 Good pattern examples:
 
 - `:sparkles: feat: 센서 스트리밍 서비스 분리`
 - `:recycle: refactor: 서버 부팅 로직을 sensor.go로 이동`
 - `:white_check_mark: test: 센서 스트리밍 테스트에 Close 구현 추가`
+- `:heavy_plus_sign: build: OAuth2 클라이언트 의존성을 추가`
+- `:arrow_up: build: Spring Boot 버전을 4.0.6으로 올림`
+- `:arrow_down: build: protobuf 플러그인 버전을 0.9.4로 내림`
+- `:rocket: deploy: 운영 배포 환경 변수를 분리`
+- `:truck: rename: oauth 패키지를 oauth2로 이동`
+- `:bug: fix: 만료된 JWT를 401로 처리`
+- `:lock: security: 민감 정보 로그 출력을 제거`
+- `:construction_worker: ci: GitHub Actions 배포 워크플로를 추가`
 
 ## Commit Execution
 
