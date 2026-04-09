@@ -1,13 +1,22 @@
 ---
 name: git-commit-korean
-description: Inspect this repository's git history and current diff, then draft or create git commits that match the local convention. Use when the user asks to write a commit message, make a git commit, summarize changes into a commit, keep commit messages in Korean, or split changes into very small logical commits aligned with recent repository history.
+description: Inspect the repository state, recent git history, and both staged and unstaged diffs, then draft or create small Korean commits that match the local convention. Use when the user asks to write a commit message, make a git commit, summarize changes into commits, redo a mistaken commit, keep commit messages in Korean, or split a mixed diff into very small logical commits aligned with recent repository history.
 ---
 
 # Git Commit Korean
 
-Follow this workflow when preparing a commit for this repository.
+Follow this workflow when preparing commits for this repository.
 
-## Inspect First
+## Bootstrap Context
+
+Before deciding commit boundaries:
+
+- Read the repository root `AGENTS.md` if it exists.
+- Read [references/commit-style.md](references/commit-style.md) before choosing final messages.
+
+Do not assume the current staged state is already correct.
+
+## Inspect Full Repo State
 
 Run these commands before writing a message unless the user already gave the exact diff scope:
 
@@ -16,7 +25,35 @@ Run these commands before writing a message unless the user already gave the exa
 - `git diff`
 - `git log --oneline -n 10`
 
-Use `git diff --staged` as the source of truth when files are already staged. If nothing is staged, confirm whether to stage files or only draft the message.
+If the user asked to redo or re-split a recent commit, also inspect the most recent commit before acting.
+
+- `git show --stat --summary HEAD`
+
+Treat `git diff --staged` as the current staging state, not as proof that the grouping is correct.
+
+## Decide Boundaries Before Staging
+
+Build commit boundaries first, then stage to match them.
+
+Default split axes:
+
+- build, dependency, and environment setup
+- shared DTO, exception, and response infrastructure
+- entity, repository, converter, and persistence model changes
+- auth utility and security domain model changes
+- filter, middleware, handler, and wiring changes
+- OAuth or third-party integration flow changes
+- runtime behavior changes unrelated to the main feature
+- tests
+- cleanup, rename, or format-only changes
+
+Strong rules:
+
+- If one commit subject would naturally contain `and`, `및`, or `그리고`, split it.
+- If one change can be reviewed independently from another, split it.
+- If one commit introduces infrastructure and another commit starts consuming it, prefer two commits: infrastructure first, consumer second.
+- If one file contains multiple concerns, use partial staging.
+- Never pull unrelated pre-existing user changes into the same commit just because they are nearby in the tree.
 
 ## Split Commits Aggressively
 
@@ -35,8 +72,6 @@ Avoid broad “do everything” commits. If the current diff mixes multiple conc
 
 ## Commit Style
 
-Read [references/commit-style.md](references/commit-style.md) before choosing the final message.
-
 Apply these rules:
 
 - Write the subject in Korean.
@@ -44,6 +79,7 @@ Apply these rules:
 - Match the repository pattern: optional emoji prefix, then `type: `, then a short Korean summary.
 - Prefer the observed types from history: `feat`, `refactor`, `test`, `remove`.
 - Keep the subject concrete and scoped to the actual change. Avoid vague summaries like `수정` or `변경`.
+- Describe the user-visible or reviewer-visible unit of change, not the low-level edit sequence.
 
 Good pattern examples:
 
@@ -55,14 +91,21 @@ Good pattern examples:
 
 When the user asked to actually commit:
 
-1. Check which files should be included.
-2. Decide the smallest sensible commit boundaries first.
-3. Stage only the intended files or hunks for the current logical unit.
-4. Create the commit with the final Korean message.
-5. Repeat for every remaining logical unit until no mixed changes remain.
-6. Report the resulting commit hash and subject for each commit.
+1. Inspect the full repo state.
+2. Decide the smallest sensible commit boundaries before staging anything.
+3. If files are already staged but mixed, unstage and rebuild the staging set.
+4. Stage only the intended files or hunks for the current logical unit.
+5. Create the commit with the final Korean message.
+6. Re-run `git status --short` and `git diff --staged` after each commit.
+7. Repeat until no intended changes remain.
+8. Report the resulting commit hash, subject, and scope for each commit.
 
-Do not amend, rebase, squash, or rewrite history unless the user explicitly asked.
+Execution guardrails:
+
+- If nothing is staged and the user asked to commit, stage the first logical unit yourself.
+- If the user explicitly asks to rewrite a mistaken commit, prefer `git reset --soft` for regrouping and then re-stage by logical unit.
+- Do not amend, rebase, squash, or rewrite history unless the user explicitly asked.
+- Do not use a single catch-all commit just to make the worktree clean.
 
 ## Output Expectations
 
