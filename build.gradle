@@ -57,6 +57,9 @@ dependencies {
     //PostgreSQL
     implementation 'org.postgresql:postgresql'
 
+    //PostgreSQL-flyway
+    runtimeOnly 'org.flywaydb:flyway-database-postgresql'
+
     //grpc & proto
     implementation platform("io.grpc:grpc-bom:${grpcVersion}")
     implementation 'io.grpc:grpc-protobuf'
