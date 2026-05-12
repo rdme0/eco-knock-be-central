@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package lightsensor.v1;
+
+option java_multiple_files = true;
+option java_package = "jnu.econovation.ecoknockbecentral.grpc.lightsensor.v1";
+
+import "google/protobuf/wrappers.proto";
+
+message GetCurrentLightSensorRequest {}
+
+message GetCurrentLightSensorResponse {
+  double lux = 1;
+  uint32 raw_als = 2;
+  uint32 raw_white = 3;
+  int64 measured_at_unix_ms = 4;
+}
+
+service LightSensorService {
+  rpc GetCurrentLightSensor(GetCurrentLightSensorRequest) returns (GetCurrentLightSensorResponse);
+}
