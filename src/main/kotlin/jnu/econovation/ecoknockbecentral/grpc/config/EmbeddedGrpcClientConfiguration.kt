@@ -3,6 +3,7 @@ package jnu.econovation.ecoknockbecentral.grpc.config
 import io.grpc.ManagedChannel
 import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder
 import jnu.econovation.ecoknockbecentral.grpc.airpurifier.v1.AirPurifierServiceGrpc
+import jnu.econovation.ecoknockbecentral.grpc.lightsensor.v1.LightSensorServiceGrpc
 import jnu.econovation.ecoknockbecentral.grpc.sensor.v2.SensorServiceGrpc
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -20,6 +21,11 @@ class EmbeddedGrpcClientConfiguration {
     @Bean
     fun sensorGrpcStub(channel: ManagedChannel): SensorServiceGrpc.SensorServiceBlockingV2Stub {
         return SensorServiceGrpc.newBlockingV2Stub(channel)
+    }
+
+    @Bean
+    fun lightSensorGrpcStub(channel: ManagedChannel): LightSensorServiceGrpc.LightSensorServiceBlockingStub {
+        return LightSensorServiceGrpc.newBlockingStub(channel)
     }
 
     @Bean
