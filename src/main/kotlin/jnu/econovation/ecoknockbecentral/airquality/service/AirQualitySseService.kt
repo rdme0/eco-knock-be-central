@@ -2,6 +2,7 @@ package jnu.econovation.ecoknockbecentral.airquality.service
 
 import jnu.econovation.ecoknockbecentral.airquality.command.SaveAirQualityCommand
 import jnu.econovation.ecoknockbecentral.airquality.dto.response.AirQualityRealtimeResponse
+import jnu.econovation.ecoknockbecentral.common.dto.response.CommonResponse
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
@@ -36,7 +37,7 @@ class AirQualitySseService {
     }
 
     fun publish(command: SaveAirQualityCommand) {
-        val response = AirQualityRealtimeResponse.from(command)
+        val response = CommonResponse.success(AirQualityRealtimeResponse.from(command))
 
         emitters.forEach { emitter ->
             runCatching {

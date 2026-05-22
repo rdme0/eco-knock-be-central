@@ -16,9 +16,21 @@ spring:
   threads:
     virtual:
       enabled: true
-
 server:
   port: 18081
+
+security:
+  jwt:
+    secret-key: ${JWT_SECRET_KEY}
+  aes256:
+    key: ${AES256_KEY}
+  uri:
+    allowed-front-end-origins:
+      - http://localhost:*
+      - https://localhost:*
+    oauth2:
+      success-path: /auth/success
+      default-redirect-origin: http://localhost:5173
 
 management:
   endpoints:
@@ -37,16 +49,3 @@ embedded:
     host: localhost
     port: 6565
     timeout: 3s
-
-security:
-  jwt:
-    secret-key: ${JWT_SECRET_KEY}
-  aes256:
-    key: ${AES256_KEY}
-  uri:
-    allowed-front-end-origins:
-      - http://localhost:*
-      - https://localhost:*
-    oauth2:
-      success-path: /auth/success
-      default-redirect-origin: http://localhost:5173

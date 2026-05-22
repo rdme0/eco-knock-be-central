@@ -1,5 +1,6 @@
 package jnu.econovation.ecoknockbecentral.member.service
 
+import jnu.econovation.ecoknockbecentral.common.exception.server.InternalServerException
 import jnu.econovation.ecoknockbecentral.member.dto.MemberInfoDTO
 import jnu.econovation.ecoknockbecentral.member.model.entity.Member
 import jnu.econovation.ecoknockbecentral.member.repository.MemberRepository
@@ -28,4 +29,11 @@ class MemberService(
 
     @Transactional(readOnly = true)
     fun getEntity(id: Long): Member? = repository.findById(id).getOrNull()
+
+    @Transactional(readOnly = true)
+    fun getEntityOrThrow(id: Long): Member {
+        return getEntity(id) ?: throw InternalServerException(
+            IllegalStateException("id가 ${id}인 회원을 찾을 수 없음.")
+        )
+    }
 }
