@@ -2,35 +2,26 @@ package jnu.econovation.ecoknockbecentral.common.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jnu.econovation.ecoknockbecentral.common.exception.constants.ErrorCode;
-import lombok.Getter;
 
-@Getter
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class CommonResponse<T> {
-
-    private final boolean isSuccess;
-    private final String message;
-    private final String errorCode;
-    private final T result;
+public record CommonResponse<T>(
+        boolean isSuccess,
+        String message,
+        String errorCode,
+        T result
+) {
 
     private static final String SUCCESS_MESSAGE = "success";
 
-    public CommonResponse(boolean isSuccess, String message, String errorCode, T result) {
-        this.isSuccess = isSuccess;
-        this.message = message;
-        this.errorCode = errorCode;
-        this.result = result;
-    }
-
-    public static CommonResponse<Void> ofSuccess() {
+    public static CommonResponse<Void> emptySuccess() {
         return new CommonResponse<>(true, SUCCESS_MESSAGE, null, null);
     }
 
-    public static <T> CommonResponse<T> ofSuccess(T result) {
+    public static <T> CommonResponse<T> success(T result) {
         return new CommonResponse<>(true, SUCCESS_MESSAGE, null, result);
     }
 
-    public static CommonResponse<Void> ofFailure(ErrorCode errorCode) {
+    public static CommonResponse<Void> failure(ErrorCode errorCode) {
         return new CommonResponse<>(
                 false,
                 errorCode.getMessage(),
@@ -39,7 +30,7 @@ public class CommonResponse<T> {
         );
     }
 
-    public static CommonResponse<Void> ofFailure(ErrorCode errorCode, String customMessage) {
+    public static CommonResponse<Void> failure(ErrorCode errorCode, String customMessage) {
         return new CommonResponse<>(
                 false,
                 customMessage,
