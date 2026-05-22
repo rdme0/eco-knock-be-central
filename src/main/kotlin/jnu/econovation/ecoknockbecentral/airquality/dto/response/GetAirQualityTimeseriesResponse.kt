@@ -1,8 +1,11 @@
 package jnu.econovation.ecoknockbecentral.airquality.dto.response
 
 import jnu.econovation.ecoknockbecentral.airquality.readmodel.entity.AirQualityView
-import jnu.econovation.ecoknockbecentral.common.toZonedDateTime
+import jnu.econovation.ecoknockbecentral.common.extension.toZonedDateTime
+import org.springframework.data.domain.Slice
 import java.time.ZonedDateTime
+
+typealias AirQualityTimeseriesSlice = Slice<AirQualityTimeseriesPointResponse>
 
 data class AirQualityTimeseriesPointResponse(
     val time: ZonedDateTime,

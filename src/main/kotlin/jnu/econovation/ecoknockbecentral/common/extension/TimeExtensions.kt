@@ -1,4 +1,4 @@
-package jnu.econovation.ecoknockbecentral.common
+package jnu.econovation.ecoknockbecentral.common.extension
 
 import jnu.econovation.ecoknockbecentral.common.util.TimeUtil
 import java.time.Instant
