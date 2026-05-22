@@ -18,7 +18,12 @@ Use this skill when working on application code in `eco-knock-be-central`.
    - services implement usecases
    - command and query services stay separate
    - write model and read model stay separate
-5. Do not introduce heavy architecture ceremony unless it clearly improves readability.
+5. Treat `overview` as a simple layered module:
+   - controllers call `OverviewService`
+   - services own transaction boundaries
+   - repositories stay behind services
+   - request DTOs validate request-specific rules
+6. Do not introduce heavy architecture ceremony unless it clearly improves readability.
 
 ## Before Editing
 
@@ -90,6 +95,15 @@ Avoid:
 - request handlers refreshing materialized views
 - adding a generic helper when an explicit branch is easier to read
 
+For `overview`:
+
+- Keep user shortcut rows independent from default shortcut rows after copying.
+- Use `default_overview_shortcut` only as the reset/init source.
+- Validate full shortcut replacement requests in `UpdateOverviewShortcutRequest`.
+- Require `sortOrder` to contain exactly `0..n-1` without duplicates.
+- Query user shortcuts ordered by `sortOrder`.
+- Keep URL validation in the `ValidHttpUrl` value object and DTO binding path.
+
 ## Code Style
 
 Match the existing style unless there is a clear reason not to.
@@ -103,6 +117,7 @@ Match the existing style unless there is a clear reason not to.
 - Keep validation close to request DTOs when the rule is request-specific.
 - Keep transaction annotations on services, not controllers.
 - Keep comments rare; delete stale TODOs instead of preserving outdated notes.
+- Use Java static factories or small Kotlin extension functions when Java Lombok builders make Kotlin call sites noisy; avoid adding broad converter classes for one-off simple transformations.
 
 Kotlin class shape:
 
@@ -160,12 +175,14 @@ if (limit !in 1..500) throw BadLimitException()
 ## API And DTO Guidance
 
 - Return simple response shapes that frontend code can consume directly.
+- Wrap controller JSON responses in `CommonResponse.success(...)`, `CommonResponse.emptySuccess()`, or `CommonResponse.failure(...)` unless an endpoint intentionally streams raw data.
 - Use Spring Data `Slice` directly when the controller naturally returns a slice.
 - For cursor-style history reads, `last == false` means more historical data exists.
 - Use `OffsetDateTime` at API boundaries when clients send timezone-aware timestamps.
 - Convert to `Instant` inside service/repository code.
 - For enum request values with custom codes, support Jackson body binding with `@JsonCreator` and `@JsonValue`.
-- Keep the current API style unless the user asks to redesign it; this project currently has timeseries `GET` handlers that receive JSON bodies.
+- For timeseries `GET` handlers, bind request DTOs from query parameters with `@ModelAttribute` or no annotation; do not use JSON bodies unless explicitly requested.
+- SSE endpoints return `SseEmitter` directly. Event payloads may still use `CommonResponse.success(...)` when sending application data.
 
 Enum code shape:
 
@@ -185,6 +202,32 @@ enum class SomeResolution(
     }
 }
 ```
+
+Value object URL binding shape:
+
+```java
+@Embeddable
+public record ValidHttpUrl(String value) {
+    @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
+    public ValidHttpUrl {
+        // validate syntax and allowed scheme
+    }
+
+    @JsonValue
+    @Override
+    public String value() {
+        return value;
+    }
+}
+```
+
+## Persistence And Migration Guidance
+
+- This project uses Flyway with `spring.jpa.hibernate.ddl-auto=validate`; every new entity/table/column needs a matching migration.
+- Keep migration filenames monotonic: `V{next}__short_description.sql`.
+- Match Hibernate's current physical naming style in SQL: `overview_shortcut`, `member_id`, `sort_order`.
+- Add indexes for query patterns that are part of the service contract, such as `(member_id, sort_order)` for ordered overview shortcut reads.
+- Prefer explicit foreign keys for entity relationships.
 
 ## Testing Guidance
 
