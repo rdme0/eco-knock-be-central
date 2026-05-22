@@ -45,7 +45,7 @@ public class Rest401Handler implements AuthenticationEntryPoint {
 
         mapper.writeValue(
                 response.getWriter(),
-                CommonResponse.ofFailure(ErrorCode.UNAUTHORIZED)
+                CommonResponse.failure(ErrorCode.UNAUTHORIZED)
         );
     }
 }

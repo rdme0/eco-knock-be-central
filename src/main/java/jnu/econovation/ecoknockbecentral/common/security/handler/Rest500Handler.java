@@ -34,7 +34,7 @@ public class Rest500Handler implements AuthenticationEntryPoint {
 
         mapper.writeValue(
                 response.getWriter(),
-                CommonResponse.ofFailure(ErrorCode.INTERNAL_SERVER_ERROR)
+                CommonResponse.failure(ErrorCode.INTERNAL_SERVER_ERROR)
         );
     }
 }

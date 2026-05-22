@@ -2,7 +2,7 @@ package jnu.econovation.ecoknockbecentral.airquality.dto
 
 import jnu.econovation.ecoknockbecentral.airquality.readmodel.entity.*
 import jnu.econovation.ecoknockbecentral.common.exception.server.InternalServerException
-import jnu.econovation.ecoknockbecentral.common.toZonedDateTime
+import jnu.econovation.ecoknockbecentral.common.extension.toZonedDateTime
 import java.time.ZonedDateTime
 
 data class AirQualityViewDTO(

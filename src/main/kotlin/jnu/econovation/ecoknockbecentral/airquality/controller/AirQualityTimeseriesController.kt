@@ -2,11 +2,13 @@ package jnu.econovation.ecoknockbecentral.airquality.controller
 
 import jnu.econovation.ecoknockbecentral.airquality.dto.request.GetTimeseriesHistoryRequest
 import jnu.econovation.ecoknockbecentral.airquality.dto.request.GetTimeseriesRequest
-import jnu.econovation.ecoknockbecentral.airquality.dto.response.AirQualityTimeseriesPointResponse
+import jnu.econovation.ecoknockbecentral.airquality.dto.response.AirQualityTimeseriesSlice
 import jnu.econovation.ecoknockbecentral.airquality.usecase.QueryAirQualityUseCase
-import org.springframework.data.domain.Slice
+import jnu.econovation.ecoknockbecentral.common.dto.response.CommonResponse
+import jnu.econovation.ecoknockbecentral.common.dto.response.CommonResponse.success
+import org.springframework.http.ResponseEntity
+import org.springframework.http.ResponseEntity.ok
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -16,12 +18,16 @@ class AirQualityTimeseriesController(
     private val queryAirQualityUseCase: QueryAirQualityUseCase,
 ) {
     @GetMapping
-    fun timeseries(@RequestBody request: GetTimeseriesRequest): Slice<AirQualityTimeseriesPointResponse> {
-        return queryAirQualityUseCase.queryAirQualityTimeseries(request)
+    fun timeseries(
+        request: GetTimeseriesRequest
+    ): ResponseEntity<CommonResponse<AirQualityTimeseriesSlice>> {
+        return ok(success(queryAirQualityUseCase.queryAirQualityTimeseries(request)))
     }
 
     @GetMapping("/history")
-    fun history(@RequestBody request: GetTimeseriesHistoryRequest): Slice<AirQualityTimeseriesPointResponse> {
-        return queryAirQualityUseCase.queryAirQualityTimeseriesHistory(request)
+    fun history(
+        request: GetTimeseriesHistoryRequest
+    ): ResponseEntity<CommonResponse<AirQualityTimeseriesSlice>> {
+        return ok(success(queryAirQualityUseCase.queryAirQualityTimeseriesHistory(request)))
     }
 }
