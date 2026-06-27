@@ -11,6 +11,9 @@ import java.util.List;
 @Component
 public class AuthPolicyResolver {
     private final List<AuthRule> rules = List.of(
+            AuthRule.skip("/sso/login", HttpMethod.GET),
+            AuthRule.skip("/sso/callback", HttpMethod.GET),
+            AuthRule.skip("/auth/reissue", HttpMethod.POST),
             AuthRule.skip("/auth/success"),
             AuthRule.skip("/actuator/health"),
             AuthRule.skip("/actuator/info"),
@@ -18,8 +21,6 @@ public class AuthPolicyResolver {
             AuthRule.skip("/air-quality/stream"),
             AuthRule.skip("/error"),
             AuthRule.skip("/favicon.ico"),
-            AuthRule.skip("/oauth2/authorization/**"),
-            AuthRule.skip("/login/**"),
             AuthRule.optional("/air-quality/**", HttpMethod.GET),
             AuthRule.required("/**")
 //          AuthRule.optional("/posts/**", HttpMethod.GET), optional 한 인증일 때 예시

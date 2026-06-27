@@ -1,20 +1,10 @@
 package jnu.econovation.ecoknockbecentral.member.model.entity;
 
-import jakarta.persistence.AttributeOverride;
-import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
-import jakarta.persistence.Embedded;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import jnu.econovation.ecoknockbecentral.common.converter.StringEncryptConverter;
 import jnu.econovation.ecoknockbecentral.common.model.entity.BaseEntity;
 import jnu.econovation.ecoknockbecentral.member.model.vo.ActiveStatus;
 import jnu.econovation.ecoknockbecentral.member.model.vo.Cohort;
-import jnu.econovation.ecoknockbecentral.member.model.vo.Oauth2Provider;
 import jnu.econovation.ecoknockbecentral.member.model.vo.Role;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -28,6 +18,9 @@ public class Member extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false, unique = true)
+    private Long ssoMemberId;
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
@@ -45,22 +38,18 @@ public class Member extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private ActiveStatus status;
 
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    private Oauth2Provider provider;
-
     @Builder
     Member(
+            Long ssoMemberId,
             Cohort cohort,
             String name,
-            ActiveStatus status,
-            Oauth2Provider provider
+            ActiveStatus status
     ) {
+        this.ssoMemberId = ssoMemberId;
         this.role = Role.USER;
         this.cohort = cohort;
         this.name = name;
         this.status = status;
-        this.provider = provider;
     }
 
     public void promoteToAdmin() {

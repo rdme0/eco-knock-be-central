@@ -1,0 +1,73 @@
+package jnu.econovation.ecoknockbecentral.sso.controller
+
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
+import jnu.econovation.ecoknockbecentral.auth.config.AuthPolicyConfig
+import jnu.econovation.ecoknockbecentral.auth.constant.AuthConstant.ACCESS_TOKEN
+import jnu.econovation.ecoknockbecentral.auth.constant.AuthConstant.REFRESH_TOKEN
+import jnu.econovation.ecoknockbecentral.common.cookie.util.CookieUtil
+import jnu.econovation.ecoknockbecentral.sso.config.SSOConfig
+import jnu.econovation.ecoknockbecentral.sso.constant.SSOConstant.ACCESS_TOKEN_COOKIE
+import jnu.econovation.ecoknockbecentral.sso.constant.SSOConstant.CLIENT_TYPE_WEB
+import jnu.econovation.ecoknockbecentral.sso.constant.SSOConstant.SSO_REDIRECT_URL_KEY
+import jnu.econovation.ecoknockbecentral.sso.dto.SSOAuthResultDTO
+import jnu.econovation.ecoknockbecentral.sso.resolver.SSORedirectUrlResolver
+import jnu.econovation.ecoknockbecentral.sso.service.SSOAuthService
+import org.springframework.web.bind.annotation.CookieValue
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.util.UriComponentsBuilder
+import org.springframework.web.util.WebUtils
+
+@RestController
+class SSOAuthController(
+    private val service: SSOAuthService,
+    private val config: SSOConfig,
+    private val redirectUrlResolver: SSORedirectUrlResolver,
+    private val authPolicyConfig: AuthPolicyConfig
+) {
+    @GetMapping("/sso/login")
+    fun login(response: HttpServletResponse) {
+        val ssoRedirectUrl = UriComponentsBuilder.fromUriString(config.baseUrl)
+            .queryParam("client-id", config.clientId)
+            .queryParam("client-type", CLIENT_TYPE_WEB)
+            .build()
+            .toUriString()
+
+        response.sendRedirect(ssoRedirectUrl)
+    }
+
+    @GetMapping("/sso/callback")
+    fun callback(
+        @CookieValue(name = ACCESS_TOKEN_COOKIE, required = false)
+        ssoAccessToken: String?,
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+    ) {
+        val frontendRedirectUrl = redirectUrlResolver.resolve(
+            WebUtils.getCookie(request, SSO_REDIRECT_URL_KEY)?.value
+        )
+
+        val result: SSOAuthResultDTO = service.authenticateMember(ssoAccessToken)
+
+        CookieUtil.addCookie(
+            request,
+            response,
+            ACCESS_TOKEN,
+            result.accessToken,
+            authPolicyConfig.accessTokenTTL().toSeconds().toInt(),
+        )
+
+        CookieUtil.addCookie(
+            request,
+            response,
+            REFRESH_TOKEN,
+            result.refreshToken,
+            authPolicyConfig.refreshTokenTTL().toSeconds().toInt(),
+        )
+
+        CookieUtil.removeCookie(request, response, SSO_REDIRECT_URL_KEY)
+
+        response.sendRedirect(frontendRedirectUrl)
+    }
+}

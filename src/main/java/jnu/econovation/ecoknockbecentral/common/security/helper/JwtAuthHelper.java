@@ -12,8 +12,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class JwtAuthHelper {
 
-    private static final String BEARER_PREFIX = "Bearer ";
-
     private final JwtUtil jwtUtil;
     private final MemberService memberService;
 
@@ -22,29 +20,12 @@ public class JwtAuthHelper {
         this.memberService = memberService;
     }
 
-    public Authentication authenticate(String authHeader) {
-        return authenticate(authHeader, true);
-    }
-
-    public Authentication authenticate(
-            String authHeader,
-            boolean isBearer
-    ) {
-        if (authHeader == null) {
+    public Authentication authenticate(String token) {
+        if (token == null || token.isBlank()) {
             throw new UnauthorizedException();
         }
 
-        String token;
-        if (isBearer) {
-            if (!authHeader.startsWith(BEARER_PREFIX)) {
-                throw new UnauthorizedException();
-            }
-            token = authHeader.substring(BEARER_PREFIX.length());
-        } else {
-            token = authHeader;
-        }
-
-        if (!jwtUtil.validateToken(token)) {
+        if (!jwtUtil.validateAccessToken(token)) {
             throw new UnauthorizedException();
         }
 

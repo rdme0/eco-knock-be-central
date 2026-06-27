@@ -5,23 +5,32 @@ import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
-import java.time.Duration;
-import java.util.Date;
-import javax.crypto.SecretKey;
+import jnu.econovation.ecoknockbecentral.auth.config.AuthPolicyConfig;
 import jnu.econovation.ecoknockbecentral.member.dto.MemberInfoDTO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-@Component
-public class JwtUtil {
+import javax.crypto.SecretKey;
+import java.util.Date;
+import java.util.UUID;
 
-    private static final Duration EXPIRATION = Duration.ofHours(6);
+@Component
+public class JwtUtil{
+    private static final String TOKEN_TYPE_CLAIM = "type";
+    private static final String ACCESS_TOKEN_TYPE = "ACCESS";
+    private static final String REFRESH_TOKEN_TYPE = "REFRESH";
 
     @Value("${security.jwt.secret-key}")
     private String secretKey;
 
+    private final AuthPolicyConfig authPolicyConfig;
+
     private SecretKey key;
     private JwtParser jwtParser;
+
+    public JwtUtil(AuthPolicyConfig authPolicyConfig) {
+        this.authPolicyConfig = authPolicyConfig;
+    }
 
     @PostConstruct
     public void init() {
@@ -38,14 +47,37 @@ public class JwtUtil {
         }
     }
 
-    public String generateToken(MemberInfoDTO memberInfo) {
+    public String extractTokenId(String token) {
+        try {
+            return jwtParser.parseSignedClaims(token).getPayload().getId();
+        } catch (JwtException e) {
+            return null;
+        }
+    }
+
+    public String generateAccessToken(MemberInfoDTO memberInfo) {
         long now = System.currentTimeMillis();
 
         return Jwts.builder()
                 .subject(String.valueOf(memberInfo.getId()))
                 .claim("id", memberInfo.getId())
+                .claim(TOKEN_TYPE_CLAIM, ACCESS_TOKEN_TYPE)
                 .issuedAt(new Date(now))
-                .expiration(new Date(now + EXPIRATION.toMillis()))
+                .expiration(new Date(now + authPolicyConfig.accessTokenTTL().toMillis()))
+                .signWith(key)
+                .compact();
+    }
+
+    public String generateRefreshToken(MemberInfoDTO memberInfo) {
+        long now = System.currentTimeMillis();
+
+        return Jwts.builder()
+                .subject(String.valueOf(memberInfo.getId()))
+                .id(UUID.randomUUID().toString())
+                .claim("id", memberInfo.getId())
+                .claim(TOKEN_TYPE_CLAIM, REFRESH_TOKEN_TYPE)
+                .issuedAt(new Date(now))
+                .expiration(new Date(now + authPolicyConfig.refreshTokenTTL().toMillis()))
                 .signWith(key)
                 .compact();
     }
@@ -58,6 +90,29 @@ public class JwtUtil {
         try {
             jwtParser.parseSignedClaims(token);
             return true;
+        } catch (JwtException e) {
+            return false;
+        }
+    }
+
+    public boolean validateAccessToken(String token) {
+        return validateTokenType(token, ACCESS_TOKEN_TYPE);
+    }
+
+    public boolean validateRefreshToken(String token) {
+        return validateTokenType(token, REFRESH_TOKEN_TYPE);
+    }
+
+    private boolean validateTokenType(String token, String tokenType) {
+        if (!validateToken(token)) {
+            return false;
+        }
+
+        try {
+            String actualType = jwtParser.parseSignedClaims(token)
+                    .getPayload()
+                    .get(TOKEN_TYPE_CLAIM, String.class);
+            return tokenType.equals(actualType);
         } catch (JwtException e) {
             return false;
         }
