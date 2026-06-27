@@ -1,15 +1,10 @@
 package jnu.econovation.ecoknockbecentral.common.security.filter;
 
-import static jnu.econovation.ecoknockbecentral.common.constant.CommonConstant.criticalError;
-import static jnu.econovation.ecoknockbecentral.common.security.constant.SecurityConstants.AUTHORIZATION_HEADER;
-
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
-import java.io.IOException;
-
+import jnu.econovation.ecoknockbecentral.common.cookie.util.CookieUtil;
 import jnu.econovation.ecoknockbecentral.common.security.constant.AuthPolicy;
 import jnu.econovation.ecoknockbecentral.common.security.handler.Rest401Handler;
 import jnu.econovation.ecoknockbecentral.common.security.handler.Rest500Handler;
@@ -25,6 +20,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.WebUtils;
+
+import java.io.IOException;
+
+import static jnu.econovation.ecoknockbecentral.common.constant.CommonConstant.criticalError;
+import static jnu.econovation.ecoknockbecentral.auth.constant.AuthConstant.ACCESS_TOKEN;
 
 @Component
 @RequiredArgsConstructor
@@ -48,7 +49,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         AuthPolicy policy = policyResolver.resolve(request);
 
         try {
-            Authentication auth = helper.authenticate(request.getHeader(AUTHORIZATION_HEADER));
+            Authentication auth = helper.authenticate(resolveAccessToken(request));
 
             if (auth instanceof AbstractAuthenticationToken token) {
                 token.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
@@ -76,11 +77,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         SecurityContextHolder.clearContext();
 
         if (e instanceof AuthenticationException authenticationException) {
+            CookieUtil.removeCookie(request, response, ACCESS_TOKEN);
             rest401Handler.commence(request, response, authenticationException);
-        } else {
-            AuthenticationServiceException serviceException =
-                    new AuthenticationServiceException(criticalError.apply("인증"), e);
-            rest500Handler.commence(request, response, serviceException);
+            return;
         }
+
+        AuthenticationServiceException serviceException = new AuthenticationServiceException(criticalError.apply("인증"), e);
+        rest500Handler.commence(request, response, serviceException);
+    }
+
+    private String resolveAccessToken(HttpServletRequest request) {
+        var cookie = WebUtils.getCookie(request, ACCESS_TOKEN);
+        return cookie != null ? cookie.getValue() : null;
     }
 }

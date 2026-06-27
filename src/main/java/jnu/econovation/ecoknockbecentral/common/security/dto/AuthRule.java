@@ -18,6 +18,10 @@ public record AuthRule(
         return new AuthRule(pattern, null, AuthPolicy.SKIP);
     }
 
+    public static AuthRule skip(String pattern, HttpMethod... methods) {
+        return new AuthRule(pattern, Set.of(methods), AuthPolicy.SKIP);
+    }
+
     public static AuthRule required(String pattern) {
         return new AuthRule(pattern, null, AuthPolicy.REQUIRED);
     }
