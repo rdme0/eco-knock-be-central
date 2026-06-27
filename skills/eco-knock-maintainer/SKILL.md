@@ -104,6 +104,18 @@ For `overview`:
 - Query user shortcuts ordered by `sortOrder`.
 - Keep URL validation in the `ValidHttpUrl` value object and DTO binding path.
 
+For `auth` and `sso`:
+
+- Keep first-party token issuing, refresh, token DTOs, auth policy config, and auth client exceptions under `auth`.
+- Keep auth-econovation integration details under `sso`: SSO `/me` client, WEB callback handling, redirect URL resolving, and SSO-specific client exceptions.
+- Treat auth-econovation `role` as separate from this service's `Member.role`; do not promote internal roles from the SSO role unless the user explicitly changes that policy.
+- Store only refresh token `jti` values in Redis, keyed by `auth:refresh:{memberId}`. Do not store raw refresh token strings.
+- Keep refresh token comparison and replacement atomic. Use the Lua script resource under `src/main/resources/redis` for compare-and-replace behavior instead of splitting Redis `GET` and `SET` in service code.
+- Prefer repository method names that describe the Redis operation directly, such as `replaceIfMatches`, and translate Lua return codes into a small enum before they reach services.
+- Keep Spring Security infrastructure under `common.security`: filters, handlers, user details, policy resolver, and JWT helper/util wiring.
+- Do not replace `JwtAuthHelper`'s existing filter-level `UnauthorizedException` flow with auth domain `ClientException`; auth domain `ClientException` is for controller/service API failures such as refresh token reissue.
+- For redirect parameters that eventually feed `sendRedirect`, validate against the frontend allowlist both when accepting the query parameter and before final redirect from a stored cookie.
+
 ## Code Style
 
 Match the existing style unless there is a clear reason not to.
@@ -225,6 +237,7 @@ public record ValidHttpUrl(String value) {
 
 - This project uses Flyway with `spring.jpa.hibernate.ddl-auto=validate`; every new entity/table/column needs a matching migration.
 - Keep migration filenames monotonic: `V{next}__short_description.sql`.
+- Do not edit already-applied Flyway migrations such as `V1__init_schema.sql`; add the next versioned migration instead.
 - Match Hibernate's current physical naming style in SQL: `overview_shortcut`, `member_id`, `sort_order`.
 - Add indexes for query patterns that are part of the service contract, such as `(member_id, sort_order)` for ordered overview shortcut reads.
 - Prefer explicit foreign keys for entity relationships.
