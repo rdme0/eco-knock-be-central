@@ -36,6 +36,12 @@ security:
       - http://localhost:*
       - https://localhost:*
 
+sso:
+  base-url: https://auth.econovation.kr
+  client-id: ${SSO_CLIENT_ID}
+  me-path: /api/v1/auth/me
+  reissue-path: /api/v1/auth/reissue
+
 management:
   endpoints:
     web:
