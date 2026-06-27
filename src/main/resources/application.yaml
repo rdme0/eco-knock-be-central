@@ -35,9 +35,6 @@ security:
     allowed-front-end-origins:
       - http://localhost:*
       - https://localhost:*
-    oauth2:
-      success-path: /auth/success
-      default-redirect-origin: http://localhost:5173
 
 management:
   endpoints:
