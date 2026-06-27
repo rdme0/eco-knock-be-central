@@ -2,12 +2,13 @@
 
 `eco-knock-be-central`은 임베디드 장치의 센서/공기청정기 gRPC 데이터를 수집하고, 공기질 데이터를 저장·조회하는 Spring Boot 기반 중앙 백엔드입니다.
 
-현재 구현은 PostgreSQL 저장소, Flyway 스키마 관리, JWT 기반 보안 필터, 공기질 timeseries 조회 API, SSE 실시간 스트림, overview shortcut API, Actuator/Prometheus 메트릭 엔드포인트를 포함합니다.
+현재 구현은 PostgreSQL 저장소, Redis 기반 refresh token 상태 저장, Flyway 스키마 관리, SSO 기반 로그인, HttpOnly 쿠키 기반 JWT 인증, 공기질 timeseries 조회 API, SSE 실시간 스트림, overview shortcut API, Actuator/Prometheus 메트릭 엔드포인트를 포함합니다.
 
 ## 현재 구현 범위
 
 - Spring Boot 4 + Java 25 + Kotlin 혼합 프로젝트
 - PostgreSQL + Spring Data JPA
+- Redis 기반 refresh token jti 저장
 - Flyway 기반 DB 스키마 및 materialized view 관리
 - `air_quality` 원본 데이터 저장
 - `1m`, `5m`, `15m`, `1h`, `4h`, `1d` 공기질 materialized view
@@ -19,14 +20,15 @@
 - 관리자용 default overview shortcut 저장 모델
 - 센서/공기청정기 현재 상태 gRPC polling producer
 - queue 기반 공기질 저장 consumer
-- JWT 인증 필터 및 optional 인증 정책
+- auth-econovation WEB SSO 로그인/콜백
+- 자체 access/refresh JWT HttpOnly 쿠키 발급 및 재발급
+- Redis Lua script 기반 refresh token 재사용 탐지
+- JWT 쿠키 인증 필터 및 optional 인증 정책
 - Actuator health/info/prometheus 엔드포인트
 - proto 기반 코드 생성 Gradle 설정
 
 ## 아직 미완성인 부분
 
-- `EcoKnockOAuth2UserService#loadUser()`는 `TODO` 상태입니다.
-- `SecurityConfig`의 `oauth2Login()` 설정은 현재 주석 처리되어 있습니다.
 - gRPC 서버가 떠 있지 않으면 producer가 연결 실패 로그를 남깁니다.
 
 ## 기술 스택
@@ -36,7 +38,9 @@
 - Spring Boot 4
 - Spring Security
 - Spring Data JPA
+- Spring Data Redis
 - PostgreSQL
+- Redis
 - Flyway
 - gRPC / Protocol Buffers
 - Actuator / Micrometer Prometheus
@@ -72,6 +76,14 @@ src/main/kotlin/jnu/econovation/ecoknockbecentral
 │  ├─ scheduler
 │  ├─ service
 │  └─ usecase
+├─ auth
+│  ├─ config
+│  ├─ constant
+│  ├─ controller
+│  ├─ dto
+│  ├─ exception
+│  ├─ repository
+│  └─ service
 ├─ common
 │  └─ extension
 ├─ grpc
@@ -84,7 +96,15 @@ src/main/kotlin/jnu/econovation/ecoknockbecentral
 │  ├─ extension
 │  ├─ repository
 │  └─ service
-└─ oauth2
+└─ sso
+   ├─ client
+   ├─ config
+   ├─ constant
+   ├─ controller
+   ├─ dto
+   ├─ exception
+   ├─ resolver
+   └─ service
 
 src/main/resources/db/migration
 ├─ V1__init_schema.sql
@@ -92,7 +112,11 @@ src/main/resources/db/migration
 ├─ V3__add_air_quality_materialized_view_resolutions.sql
 ├─ V4__recreate_air_quality_materialized_views_with_double_precision.sql
 ├─ V5__create_light_report.sql
-└─ V6__create_overview_shortcuts.sql
+├─ V6__create_overview_shortcuts.sql
+└─ V7__update_member_for_sso.sql
+
+src/main/resources/redis
+└─ rotate-refresh-token.lua
 
 src/main/proto
 ├─ sensor/v1/sensor.proto
@@ -104,12 +128,14 @@ src/main/proto
 
 - JDK 25
 - PostgreSQL
+- Redis
 - `sensor.v2.SensorService`와 `airpurifier.v1.AirPurifierService`를 제공하는 gRPC 서버
 
 기본 설정:
 
 - HTTP 서버 포트: `18081`
 - PostgreSQL: `localhost:5432`, 데이터베이스명 `ecoknock`
+- Redis: `localhost:6379`
 - gRPC 서버: `localhost:6565`
 
 ## 환경 변수
@@ -123,6 +149,8 @@ src/main/proto
   - `Keys.hmacShaKeyFor(...)`에 사용할 만큼 충분히 긴 문자열이어야 합니다.
 - `AES256_KEY`
   - 정확히 32바이트 문자열이어야 합니다.
+- `SSO_CLIENT_ID`
+  - auth-econovation에 등록된 WEB client id입니다.
 
 선택:
 
@@ -130,21 +158,48 @@ src/main/proto
 - `DEV_POSTGRES_PORT` 기본값 `5432`
 - `DEV_POSTGRES_USERNAME` 기본값 `postgres`
 - `DEV_POSTGRES_PASSWORD` 기본값 빈 문자열
+- `DEV_REDIS_HOST` 기본값 `localhost`
+- `DEV_REDIS_PORT` 기본값 `6379`
 
 예시:
 
 ```dotenv
 JWT_SECRET_KEY=replace-with-a-long-secret-key
 AES256_KEY=12345678901234567890123456789012
+SSO_CLIENT_ID=replace-with-sso-client-id
 DEV_POSTGRES_HOST=localhost
 DEV_POSTGRES_PORT=5432
 DEV_POSTGRES_USERNAME=postgres
 DEV_POSTGRES_PASSWORD=postgres
+DEV_REDIS_HOST=localhost
+DEV_REDIS_PORT=6379
 ```
 
 ## 실행 방법
 
 proto 생성은 `compileJava`, `compileKotlin`, `bootRun` 전에 자동으로 연결되어 있습니다.
+
+로컬 개발용 PostgreSQL/Redis 실행:
+
+```powershell
+.\deploy\dev\dev.ps1
+```
+
+자주 쓰는 Docker Compose 명령은 첫 번째 인자로 넘길 수 있습니다.
+
+```powershell
+.\deploy\dev\dev.ps1 ps
+.\deploy\dev\dev.ps1 logs
+.\deploy\dev\dev.ps1 down
+```
+
+Git Bash 또는 Unix 계열 셸에서는 다음 스크립트를 사용할 수 있습니다.
+
+```bash
+sh ./deploy/dev/dev.sh
+sh ./deploy/dev/dev.sh ps
+sh ./deploy/dev/dev.sh down
+```
 
 로컬 실행:
 
@@ -190,6 +245,7 @@ Flyway는 `classpath:db/migration` 아래 SQL을 실행합니다.
 - `V4`: 공기질 materialized view를 `avg_pm25 double precision` 기준으로 재생성
 - `V5`: 조도 리포트 저장용 `light_report` 테이블 생성
 - `V6`: overview shortcut, default overview shortcut 테이블 생성
+- `V7`: member에 SSO 식별자 컬럼 추가 및 OAuth2 provider 컬럼 제거
 
 JPA 설정은 `ddl-auto: validate`이므로 애플리케이션 시작 시 엔티티와 DB 스키마가 맞는지 검증합니다.
 
@@ -292,6 +348,50 @@ data: ok
 }
 ```
 
+## 인증 / SSO
+
+인증은 auth-econovation WEB SSO와 자체 JWT 쿠키를 함께 사용합니다.
+
+### 로그인 시작
+
+프론트엔드는 로그인 시작 시 백엔드로 redirect 목적지를 전달합니다.
+
+```http
+GET /sso/login?redirect=http://localhost:5173
+```
+
+`redirect`는 `security.uri.allowed-front-end-origins` allowlist로 검증되며, 통과한 URL은 `SSO_REDIRECT_URL` HttpOnly 쿠키로 잠시 저장됩니다. 이후 백엔드는 auth-econovation 로그인 페이지로 redirect합니다.
+
+### SSO 콜백
+
+auth-econovation에 등록할 callback URL은 백엔드의 다음 엔드포인트입니다.
+
+```http
+GET /sso/callback
+```
+
+백엔드는 SSO가 발급한 `at` 쿠키로 SSO `/me`를 조회해 회원을 매핑하고, 자체 `accessToken`, `refreshToken` HttpOnly 쿠키를 발급한 뒤 저장해 둔 프론트 redirect URL로 이동합니다.
+
+### 토큰 재발급
+
+보호 API에서 access token 만료로 401이 발생하면 프론트엔드는 credential 포함 요청으로 재발급을 시도합니다.
+
+```http
+POST /auth/reissue
+Cookie: refreshToken=<token>
+```
+
+성공 시 새 `accessToken`, `refreshToken` 쿠키를 내려주며, 응답은 `CommonResponse.emptySuccess()`입니다. refresh token이 없거나 유효하지 않으면 두 토큰 쿠키를 제거하고 `BAD_REFRESH_TOKEN` 401 응답을 반환합니다.
+
+refresh token은 JWT 원문 대신 `jti`만 Redis에 저장합니다.
+
+```text
+key   = auth:refresh:{memberId}
+value = 현재 유효한 refresh token의 jti
+```
+
+재발급 시에는 Redis Lua script로 현재 jti 비교와 새 jti 저장을 원자적으로 처리합니다. Redis 값이 요청 token의 jti와 다르면 이전 refresh token 재사용으로 판단하고 해당 사용자의 refresh 상태를 삭제합니다.
+
 ## Overview Shortcut API
 
 overview shortcut API는 JWT 인증된 사용자의 바로가기 목록을 다룹니다.
@@ -307,7 +407,7 @@ shortcut은 다음 값을 가집니다.
 
 ```http
 GET /overview/shortcuts
-Authorization: Bearer <token>
+Cookie: accessToken=<token>
 ```
 
 응답은 `CommonResponse`로 감싼 shortcut 배열입니다.
@@ -331,7 +431,7 @@ Authorization: Bearer <token>
 
 ```http
 PUT /overview/shortcuts
-Authorization: Bearer <token>
+Cookie: accessToken=<token>
 Content-Type: application/json
 
 {
@@ -352,22 +452,25 @@ Content-Type: application/json
 
 ```http
 PUT /overview/shortcuts/reset
-Authorization: Bearer <token>
+Cookie: accessToken=<token>
 ```
 
 현재 사용자 shortcut을 삭제한 뒤 `default_overview_shortcut` 테이블의 값을 복사합니다. 기본값 테이블의 운영자 관리 API는 아직 구현되어 있지 않습니다.
 
 ## 보안 동작
 
-현재 보안 설정은 JWT 기반 stateless 인증을 전제로 합니다.
+현재 보안 설정은 HttpOnly 쿠키 기반 JWT stateless 인증을 전제로 합니다.
 
 - 기본적으로 모든 요청은 인증이 필요합니다.
 - `GET /overview/shortcuts`, `PUT /overview/shortcuts`, `PUT /overview/shortcuts/reset`은 인증된 사용자만 접근할 수 있습니다.
 - `GET /air-quality/**`는 optional 인증입니다.
 - `/air-quality/stream`은 SSE 특성상 인증 없이 접근 가능합니다.
+- `GET /sso/login`, `GET /sso/callback`, `POST /auth/reissue`는 인증 없이 접근 가능합니다.
 - `/actuator/health`, `/actuator/info`, `/actuator/prometheus`는 인증 없이 접근 가능합니다.
-- JWT 필터는 `Authorization` 헤더를 기준으로 인증을 시도합니다.
-- OAuth2 관련 클래스는 존재하지만 로그인 플로우는 아직 활성화되어 있지 않습니다.
+- JWT 필터는 `accessToken` 쿠키를 기준으로 인증을 시도합니다.
+- access token 인증 실패 시 `accessToken` 쿠키를 제거합니다.
+- refresh token 재발급 실패 시 `accessToken`, `refreshToken` 쿠키를 모두 제거합니다.
+- refresh token 재발급은 Redis에 저장된 현재 jti와 요청 token의 jti가 일치할 때만 성공합니다.
 
 ## Actuator / Prometheus
 
@@ -398,4 +501,4 @@ Prometheus는 `/actuator/prometheus`를 scrape하면 됩니다.
 
 ## 현재 상태 요약
 
-이 저장소는 중앙 백엔드의 공기질 수집·조회 흐름과 사용자 overview shortcut 기능을 구현 중입니다. gRPC polling, DB 저장, materialized view 기반 timeseries 조회, SSE 실시간 전송, overview shortcut 조회·수정·재설정, Actuator 메트릭 노출은 구현되어 있습니다. OAuth2 로그인 플로우는 아직 활성화되어 있지 않습니다.
+이 저장소는 중앙 백엔드의 공기질 수집·조회 흐름과 사용자 overview shortcut 기능을 구현 중입니다. gRPC polling, DB 저장, Redis refresh token 상태 저장, materialized view 기반 timeseries 조회, SSE 실시간 전송, overview shortcut 조회·수정·재설정, SSO 로그인, JWT 쿠키 인증, Actuator 메트릭 노출은 구현되어 있습니다.

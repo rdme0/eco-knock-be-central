@@ -1,8 +1,7 @@
 package jnu.econovation.ecoknockbecentral.common.security.config;
 
 import jnu.econovation.ecoknockbecentral.common.security.filter.JwtAuthFilter;
-import jnu.econovation.ecoknockbecentral.oauth2.handler.OAuth2SuccessHandler;
-import jnu.econovation.ecoknockbecentral.oauth2.service.EcoKnockOAuth2UserService;
+import jnu.econovation.ecoknockbecentral.common.security.filter.SSORedirectParamFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -29,13 +28,11 @@ import java.util.List;
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-
     private static final long CORS_MAX_AGE = 3600L;
 
     private final UriSecurityConfig uriSecurityConfig;
-    private final EcoKnockOAuth2UserService oAuth2UserService;
-    private final OAuth2SuccessHandler oAuth2SuccessHandler;
     private final JwtAuthFilter jwtAuthFilter;
+    private final SSORedirectParamFilter ssoRedirectParamFilter;
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -78,6 +75,9 @@ public class SecurityConfig {
                                 "/error",
                                 "/favicon.ico"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/sso/login").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/sso/callback").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/reissue").permitAll()
                         .requestMatchers(HttpMethod.GET, "/air-quality/**").permitAll()
                         .anyRequest().authenticated()
                 )
@@ -85,12 +85,10 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-//                .oauth2Login(oauth -> oauth
-//                        .userInfoEndpoint(userInfo ->
-//                                userInfo.userService(oAuth2UserService)
-//                        )
-//                        .successHandler(oAuth2SuccessHandler)
-//                )
+                .addFilterBefore(
+                        ssoRedirectParamFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                )
                 .addFilterBefore(
                         jwtAuthFilter,
                         UsernamePasswordAuthenticationFilter.class

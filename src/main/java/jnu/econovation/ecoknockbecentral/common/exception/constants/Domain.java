@@ -1,8 +1,9 @@
 package jnu.econovation.ecoknockbecentral.common.exception.constants;
 
 public enum Domain {
-    COMMON,
     AUTH,
+    COMMON,
+    SSO,
     SECURITY,
     MEMBER,
     AIR_QUALITY

@@ -10,6 +10,10 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum ErrorCode {
 
+    // --- AUTH ---
+    BAD_ACCESS_TOKEN(Domain.AUTH, HttpStatus.UNAUTHORIZED, 1, "Access Token이 올바르지 않습니다."),
+    BAD_REFRESH_TOKEN(Domain.AUTH, HttpStatus.UNAUTHORIZED, 2, "Refresh Token이 올바르지 않습니다."),
+
     // --- COMMON ---
     INVALID_INPUT_VALUE(Domain.COMMON, HttpStatus.BAD_REQUEST, 1, "유효하지 않은 입력 값입니다."),
     BAD_DATA_SYNTAX(Domain.COMMON, HttpStatus.BAD_REQUEST, 2, "%s"),
@@ -17,11 +21,9 @@ public enum ErrorCode {
 
     INTERNAL_SERVER_ERROR(Domain.COMMON, HttpStatus.INTERNAL_SERVER_ERROR, 1, "서버 내부 오류입니다."),
 
-    // --- AUTH ---
-    INVALID_REDIRECT_URI(Domain.AUTH, HttpStatus.BAD_REQUEST, 1, "유효하지 않은 Redirect URI 입니다. -> %s"),
-    INVALID_AUTH_CODE(Domain.AUTH, HttpStatus.BAD_REQUEST, 2, "유효하지 않은 인가 코드입니다."),
-    OAUTH2_SERVER_ERROR(Domain.AUTH, HttpStatus.INTERNAL_SERVER_ERROR, 1, "OAUTH2 인증 서버에 오류가 발생했습니다."),
-    OAUTH2_UNKNOWN_ERROR(Domain.AUTH, HttpStatus.INTERNAL_SERVER_ERROR, 2, "OAUTH2 인증 관련 알 수 없는 오류가 발생했습니다."),
+    // --- SSO ---
+    INVALID_REDIRECT_URI(Domain.SSO, HttpStatus.BAD_REQUEST, 1, "유효하지 않은 Redirect URI 입니다."),
+    BAD_SSO_TOKEN(Domain.SSO, HttpStatus.UNAUTHORIZED, 1, "SSO 토큰이 올바르지 않습니다."),
 
     // --- SECURITY ---
     ENCRYPTION_ERROR(Domain.SECURITY, HttpStatus.INTERNAL_SERVER_ERROR, 1, "암호화/복호화 중 예상치 못한 에러가 발생했습니다."),

@@ -4,6 +4,7 @@ import jnu.econovation.ecoknockbecentral.common.exception.server.InternalServerE
 import jnu.econovation.ecoknockbecentral.member.dto.MemberInfoDTO
 import jnu.econovation.ecoknockbecentral.member.model.entity.Member
 import jnu.econovation.ecoknockbecentral.member.repository.MemberRepository
+import jnu.econovation.ecoknockbecentral.sso.dto.SSOMeDTO
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import kotlin.jvm.optionals.getOrNull
@@ -16,8 +17,20 @@ class MemberService(
     fun save(member: Member) = repository.save(member)
 
     @Transactional
-    fun getOrSave(): MemberInfoDTO {
-        TODO()
+    fun getOrSaveFromSso(dto: SSOMeDTO): MemberInfoDTO {
+        val existing = repository.findBySsoMemberId(dto.ssoMemberId)
+        if (existing != null) {
+            return MemberInfoDTO.from(existing)
+        }
+
+        val member = Member.builder()
+            .ssoMemberId(dto.ssoMemberId)
+            .cohort(dto.cohort)
+            .name(dto.name)
+            .status(dto.status)
+            .build()
+
+        return MemberInfoDTO.from(repository.save(member))
     }
 
     @Transactional(readOnly = true)
