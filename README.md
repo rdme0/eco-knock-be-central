@@ -2,7 +2,7 @@
 
 `eco-knock-be-central`은 임베디드 장치의 센서/공기청정기 gRPC 데이터를 수집하고, 공기질 데이터를 저장·조회하는 Spring Boot 기반 중앙 백엔드입니다.
 
-현재 구현은 PostgreSQL 저장소, Redis 기반 refresh token 상태 저장, Flyway 스키마 관리, SSO 기반 로그인, HttpOnly 쿠키 기반 JWT 인증, 공기질 timeseries 조회 API, SSE 실시간 스트림, overview shortcut API, Actuator/Prometheus 메트릭 엔드포인트를 포함합니다.
+현재 구현은 PostgreSQL 저장소, Redis 기반 refresh token 상태 저장, Flyway 스키마 관리, SSO 기반 로그인, HttpOnly 쿠키 기반 JWT 인증, 공기질 timeseries 조회 API, SSE 실시간 스트림, overview shortcut API, Whozin 공개 회원 조회 연동, Actuator/Prometheus 메트릭 엔드포인트를 포함합니다.
 
 ## 현재 구현 범위
 
@@ -18,6 +18,7 @@
 - 공기질 SSE 실시간 스트림
 - 사용자 overview shortcut 조회·수정·기본값 재설정 API
 - 관리자용 default overview shortcut 저장 모델
+- Whozin 공개 회원 조회 API 연동 및 내부 DTO 변환
 - 센서/공기청정기 현재 상태 gRPC polling producer
 - queue 기반 공기질 저장 consumer
 - auth-econovation WEB SSO 로그인/콜백
@@ -96,6 +97,11 @@ src/main/kotlin/jnu/econovation/ecoknockbecentral
 │  ├─ extension
 │  ├─ repository
 │  └─ service
+├─ whozin
+│  ├─ client
+│  ├─ config
+│  ├─ dto
+│  └─ service
 └─ sso
    ├─ client
    ├─ config
@@ -142,6 +148,8 @@ src/main/proto
 
 이 프로젝트는 개발 환경에서 `springboot4-dotenv`를 사용하므로 루트 `.env` 파일 또는 시스템 환경 변수로 값을 주입할 수 있습니다.
 
+설정 파일은 공통 `application.yaml`과 profile별 `application-dev.yaml`, `application-prod.yaml`로 분리되어 있습니다. 별도 profile을 지정하지 않으면 `dev` profile이 기본으로 적용됩니다.
+
 필수:
 
 - `JWT_SECRET_KEY`
@@ -151,6 +159,8 @@ src/main/proto
   - 정확히 32바이트 문자열이어야 합니다.
 - `SSO_CLIENT_ID`
   - auth-econovation에 등록된 WEB client id입니다.
+- `WHOZIN_TOKEN`
+  - Whozin 공개 회원 API 호출에 사용하는 Bearer token입니다.
 
 선택:
 
@@ -160,6 +170,13 @@ src/main/proto
 - `DEV_POSTGRES_PASSWORD` 기본값 빈 문자열
 - `DEV_REDIS_HOST` 기본값 `localhost`
 - `DEV_REDIS_PORT` 기본값 `6379`
+- `PROD_POSTGRES_HOST` 기본값 `postgres`
+- `PROD_POSTGRES_PORT` 기본값 `5432`
+- `PROD_POSTGRES_USERNAME`
+- `PROD_POSTGRES_PASSWORD`
+- `PROD_REDIS_HOST` 기본값 `redis`
+- `PROD_REDIS_PORT` 기본값 `6379`
+- `PROD_SERVER_PORT` 기본값 `18081`
 
 예시:
 
@@ -167,12 +184,15 @@ src/main/proto
 JWT_SECRET_KEY=replace-with-a-long-secret-key
 AES256_KEY=12345678901234567890123456789012
 SSO_CLIENT_ID=replace-with-sso-client-id
+WHOZIN_TOKEN=replace-with-whozin-token
 DEV_POSTGRES_HOST=localhost
 DEV_POSTGRES_PORT=5432
 DEV_POSTGRES_USERNAME=postgres
 DEV_POSTGRES_PASSWORD=postgres
 DEV_REDIS_HOST=localhost
 DEV_REDIS_PORT=6379
+PROD_POSTGRES_USERNAME=postgres
+PROD_POSTGRES_PASSWORD=replace-with-prod-password
 ```
 
 ## 실행 방법
@@ -201,6 +221,32 @@ sh ./deploy/dev/dev.sh ps
 sh ./deploy/dev/dev.sh down
 ```
 
+운영 compose 설정은 Spring Boot 애플리케이션, PostgreSQL, Redis를 함께 실행합니다. 운영 profile은 `prod`로 고정되며 루트 `.env`의 `PROD_...` 값과 공통 secret 값을 사용합니다.
+
+```powershell
+.\deploy\prod\prod.ps1
+.\deploy\prod\prod.ps1 logs
+.\deploy\prod\prod.ps1 down
+```
+
+Git Bash 또는 Unix 계열 셸에서는 다음 스크립트를 사용할 수 있습니다.
+
+```bash
+sh ./deploy/prod/prod.sh
+sh ./deploy/prod/prod.sh logs
+sh ./deploy/prod/prod.sh down
+```
+
+운영 서버에서 최신 `main`을 당긴 뒤 compose를 실행하려면 배포 스크립트를 사용합니다.
+
+```powershell
+.\deploy\prod\deploy.ps1
+```
+
+```bash
+sh ./deploy/prod/deploy.sh
+```
+
 로컬 실행:
 
 ```bash
@@ -220,6 +266,12 @@ Windows PowerShell:
 ```
 
 테스트는 현재 개발 DB 설정을 사용합니다. E2E 테스트는 `2099-01-01T00:00:00Z`부터 `2099-01-01T00:10:00Z` 전까지의 테스트 데이터만 삽입/삭제합니다.
+
+Whozin 실제 API 조회 테스트는 `WHOZIN_TOKEN`과 외부 네트워크에 의존합니다.
+
+```bash
+./gradlew test --tests "jnu.econovation.ecoknockbecentral.whozin.service.WhozinServiceTest"
+```
 
 ## proto 생성
 
@@ -457,6 +509,17 @@ Cookie: accessToken=<token>
 
 현재 사용자 shortcut을 삭제한 뒤 `default_overview_shortcut` 테이블의 값을 복사합니다. 기본값 테이블의 운영자 관리 API는 아직 구현되어 있지 않습니다.
 
+## Whozin 연동
+
+Whozin 공개 회원 API를 호출해 재실 기록이 있는 회원 목록을 날짜별 내부 DTO로 변환합니다.
+
+```text
+GET https://be.whozin.econovation.kr/open-api/v1/members?year=2026&month=6&day=26
+Authorization: Bearer <WHOZIN_TOKEN>
+```
+
+`day`가 없으면 해당 월 전체를 조회하고, `day`가 있으면 해당 날짜만 조회합니다. 실제 응답의 `generated_at`은 timezone 없는 `LocalDateTime` 값으로 처리하며, `presence_duration`은 `"7시간 19분"`, `"0분"` 같은 한국어 문자열을 `Duration`으로 변환합니다.
+
 ## 보안 동작
 
 현재 보안 설정은 HttpOnly 쿠키 기반 JWT stateless 인증을 전제로 합니다.
@@ -501,4 +564,4 @@ Prometheus는 `/actuator/prometheus`를 scrape하면 됩니다.
 
 ## 현재 상태 요약
 
-이 저장소는 중앙 백엔드의 공기질 수집·조회 흐름과 사용자 overview shortcut 기능을 구현 중입니다. gRPC polling, DB 저장, Redis refresh token 상태 저장, materialized view 기반 timeseries 조회, SSE 실시간 전송, overview shortcut 조회·수정·재설정, SSO 로그인, JWT 쿠키 인증, Actuator 메트릭 노출은 구현되어 있습니다.
+이 저장소는 중앙 백엔드의 공기질 수집·조회 흐름과 사용자 overview shortcut 기능을 구현 중입니다. gRPC polling, DB 저장, Redis refresh token 상태 저장, materialized view 기반 timeseries 조회, SSE 실시간 전송, overview shortcut 조회·수정·재설정, SSO 로그인, JWT 쿠키 인증, Whozin 공개 회원 조회 연동, Actuator 메트릭 노출은 구현되어 있습니다.
