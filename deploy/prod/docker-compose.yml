@@ -1,0 +1,59 @@
+name: eco-knock-prod
+
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: deploy/prod/Dockerfile
+    image: eco-knock-be-central:prod
+    container_name: eco-knock-prod-app
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      PROD_POSTGRES_USERNAME: ${PROD_POSTGRES_USERNAME}
+      PROD_POSTGRES_PASSWORD: ${PROD_POSTGRES_PASSWORD}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      AES256_KEY: ${AES256_KEY}
+      SSO_CLIENT_ID: ${SSO_CLIENT_ID}
+      WHOZIN_TOKEN: ${WHOZIN_TOKEN}
+    ports:
+      - "${PROD_SERVER_PORT:-18081}:18081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:latest
+    container_name: eco-knock-prod-postgres
+    environment:
+      POSTGRES_DB: ecoknock
+      POSTGRES_USER: ${PROD_POSTGRES_USERNAME}
+      POSTGRES_PASSWORD: ${PROD_POSTGRES_PASSWORD}
+      TZ: Asia/Seoul
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:latest
+    container_name: eco-knock-prod-redis
+    command: [ "redis-server", "--appendonly", "yes" ]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  redis-data:
