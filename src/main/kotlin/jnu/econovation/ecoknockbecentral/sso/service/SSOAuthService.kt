@@ -4,7 +4,7 @@ import jnu.econovation.ecoknockbecentral.auth.repository.RefreshTokenRepository
 import jnu.econovation.ecoknockbecentral.common.security.util.JwtUtil
 import jnu.econovation.ecoknockbecentral.common.exception.server.InternalServerException
 import jnu.econovation.ecoknockbecentral.member.service.MemberService
-import jnu.econovation.ecoknockbecentral.sso.client.SsoAuthClient
+import jnu.econovation.ecoknockbecentral.sso.client.SSOAuthClient
 import jnu.econovation.ecoknockbecentral.sso.dto.SSOAuthResultDTO
 import jnu.econovation.ecoknockbecentral.sso.dto.SSOMeDTO
 import jnu.econovation.ecoknockbecentral.sso.dto.response.SSOMeResponse
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class SSOAuthService(
-    private val ssoAuthClient: SsoAuthClient,
+    private val ssoAuthClient: SSOAuthClient,
     private val memberService: MemberService,
     private val jwtUtil: JwtUtil,
     private val refreshTokenRepository: RefreshTokenRepository,
