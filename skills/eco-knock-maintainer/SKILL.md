@@ -116,6 +116,21 @@ For `auth` and `sso`:
 - Do not replace `JwtAuthHelper`'s existing filter-level `UnauthorizedException` flow with auth domain `ClientException`; auth domain `ClientException` is for controller/service API failures such as refresh token reissue.
 - For redirect parameters that eventually feed `sendRedirect`, validate against the frontend allowlist both when accepting the query parameter and before final redirect from a stored cookie.
 
+For `whozin`:
+
+- Keep Whozin external API integration under `whozin`: HTTP client, config, external response DTOs, internal DTO conversion, and service facade.
+- Treat the actual Whozin response as the source of truth over Swagger examples when they differ.
+- Preserve snake_case response mapping with Jackson naming annotations and keep `generated_at` timezone handling aligned with the real response shape.
+- Parse Korean `presence_duration` strings explicitly, and fail loudly with `InternalServerException` when the upstream response shape is unexpected.
+- Tests that call the real Whozin API must make the external dependency obvious and require `WHOZIN_TOKEN`; do not silently replace them with mocks unless the user asks.
+
+For deployment config:
+
+- Keep shared Spring settings in `application.yaml` and environment-specific DB/Redis settings in `application-dev.yaml` or `application-prod.yaml`.
+- Keep local dev compose under `deploy/dev` and production compose/scripts under `deploy/prod`.
+- Production compose should run the Spring app with `SPRING_PROFILES_ACTIVE=prod` and use compose service names for internal Postgres/Redis hosts.
+- Keep compose wrapper scripts thin: they should delegate to `docker compose` with the repository root `.env` and avoid duplicating compose configuration.
+
 ## Code Style
 
 Match the existing style unless there is a clear reason not to.

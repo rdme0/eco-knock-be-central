@@ -15,21 +15,24 @@ import org.springframework.web.client.RestClientResponseException
 import org.springframework.web.client.body
 
 @Component
-class SsoAuthClient(
-    private val properties: SSOConfig,
+class SSOAuthClient(
+    config: SSOConfig,
 ) {
     companion object {
+        private const val ME_PATH = "/api/v1/auth/me"
+        private const val REISSUE_PATH = "/api/v1/auth/reissue"
+
         private val logger = KotlinLogging.logger {}
     }
 
     private val client: RestClient = RestClient.builder()
-        .baseUrl(properties.baseUrl)
+        .baseUrl(config.baseUrl)
         .build()
 
     fun getMe(accessToken: String): SSOMeResponse {
         return try {
             client.get()
-                .uri(properties.mePath)
+                .uri(ME_PATH)
                 .header(HttpHeaders.COOKIE, "$ACCESS_TOKEN_COOKIE=$accessToken")
                 .retrieve()
                 .body<SSOMeResponse>()

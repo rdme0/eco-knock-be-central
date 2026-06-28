@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${PROD_POSTGRES_HOST:postgres}:${PROD_POSTGRES_PORT:5432}/ecoknock
+    username: ${PROD_POSTGRES_USERNAME}
+    password: ${PROD_POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  data:
+    redis:
+      host: ${PROD_REDIS_HOST:redis}
+      port: ${PROD_REDIS_PORT:6379}
