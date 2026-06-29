@@ -6,6 +6,7 @@ import java.util.List;
 
 @ConfigurationProperties(prefix = "security.uri")
 public record UriSecurityConfig(
-        List<String> allowedFrontEndOrigins
+        List<String> allowedFrontEndOrigins,
+        List<String> allowedAdminOrigins
 ) {
 }

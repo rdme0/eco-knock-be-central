@@ -1,10 +1,10 @@
 package jnu.econovation.ecoknockbecentral.whozin.client
 
-import com.google.common.net.HttpHeaders
 import jnu.econovation.ecoknockbecentral.common.exception.server.InternalServerException
 import jnu.econovation.ecoknockbecentral.whozin.config.WhozinConfig
 import jnu.econovation.ecoknockbecentral.whozin.dto.response.WhozinMembersResponse
 import mu.KotlinLogging
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
@@ -44,7 +44,7 @@ class WhozinClient(
                 .retrieve()
                 .body<WhozinMembersResponse>()
                 ?: throw InternalServerException(
-                    IllegalStateException("Whozin 응답 본문이 이어 있음")
+                    IllegalStateException("Whozin 응답 본문이 비어 있음")
                 )
         } catch (e: RestClientResponseException) {
             if (e.statusCode == HttpStatus.UNAUTHORIZED) {
