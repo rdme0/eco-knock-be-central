@@ -51,9 +51,6 @@ data class WhozinUser(
     val presenceDuration: Duration
 ) {
     companion object {
-        private val HOUR_REGEX = Regex("""(\d+)\s*시간""")
-        private val MINUTE_REGEX = Regex("""(\d+)\s*분""")
-
         fun from(member: WhozinMember): WhozinUser {
             return WhozinUser(
                 userId = member.memberId,
@@ -64,12 +61,12 @@ data class WhozinUser(
         }
 
         private fun parseKoreanDuration(value: String): Duration {
-            val hour = HOUR_REGEX
+            val hour = Regex("""(\d+)\s*시간""")
                 .find(value)
                 ?.groupValues
                 ?.get(1)
 
-            val minute = MINUTE_REGEX
+            val minute = Regex("""(\d+)\s*분""")
                 .find(value)
                 ?.groupValues
                 ?.get(1)

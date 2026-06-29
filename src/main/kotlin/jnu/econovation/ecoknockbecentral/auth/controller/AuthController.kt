@@ -38,7 +38,7 @@ class AuthController(
                 response,
                 ACCESS_TOKEN,
                 tokens.accessToken,
-                authPolicyConfig.accessTokenTTL.toSeconds().toInt(),
+                authPolicyConfig.accessTokenTTL().toSeconds().toInt(),
             )
 
             CookieUtil.addCookie(
@@ -46,7 +46,7 @@ class AuthController(
                 response,
                 REFRESH_TOKEN,
                 tokens.refreshToken,
-                authPolicyConfig.refreshTokenTTL.toSeconds().toInt(),
+                authPolicyConfig.refreshTokenTTL().toSeconds().toInt(),
             )
 
             ok(emptySuccess())

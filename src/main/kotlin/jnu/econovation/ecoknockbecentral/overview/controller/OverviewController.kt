@@ -36,7 +36,7 @@ class OverviewController(private val service: OverviewService) {
     fun resetShortcutsToDefault(
         @AuthenticationPrincipal userDetails: EcoKnockUserDetails
     ): ResponseEntity<CommonResponse<Void>> {
-        service.initOverviewShortcuts(memberId = userDetails.memberInfo.id)
+        service.initOverviewShortcuts(memberInfo = userDetails.memberInfo)
         return ok(emptySuccess())
     }
 

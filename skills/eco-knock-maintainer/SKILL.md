@@ -99,20 +99,16 @@ For `overview`:
 
 - Keep user shortcut rows independent from default shortcut rows after copying.
 - Use `default_overview_shortcut` only as the reset/init source.
-- Treat default overview shortcuts and user overview shortcuts as separate domains. Do not reuse user shortcut request DTOs for default shortcut admin writes.
-- Default overview shortcut replacement should accept a default-specific request type directly; avoid converting it into `UpdateOverviewShortcutRequest` or `UpdateShortcutDTO`.
 - Validate full shortcut replacement requests in `UpdateOverviewShortcutRequest`.
 - Require `sortOrder` to contain exactly `0..n-1` without duplicates.
 - Query user shortcuts ordered by `sortOrder`.
 - Keep URL validation in the `ValidHttpUrl` value object and DTO binding path.
-- For JSON admin shortcut requests, bind URL fields as `ValidHttpUrl` directly so Jackson uses its `@JsonCreator(DELEGATING)` validation instead of manually accepting `String` and converting later.
 
 For `auth` and `sso`:
 
 - Keep first-party token issuing, refresh, token DTOs, auth policy config, and auth client exceptions under `auth`.
 - Keep auth-econovation integration details under `sso`: SSO `/me` client, WEB callback handling, redirect URL resolving, and SSO-specific client exceptions.
 - Treat auth-econovation `role` as separate from this service's `Member.role`; do not promote internal roles from the SSO role unless the user explicitly changes that policy.
-- For admin authorization, use this service's project role such as `Member.role = ADMIN`; never treat the SSO role as admin authority unless the user explicitly changes that policy.
 - Store only refresh token `jti` values in Redis, keyed by `auth:refresh:{memberId}`. Do not store raw refresh token strings.
 - Keep refresh token comparison and replacement atomic. Use the Lua script resource under `src/main/resources/redis` for compare-and-replace behavior instead of splitting Redis `GET` and `SET` in service code.
 - Prefer repository method names that describe the Redis operation directly, such as `replaceIfMatches`, and translate Lua return codes into a small enum before they reach services.
@@ -139,10 +135,6 @@ For deployment config:
 
 Match the existing style unless there is a clear reason not to.
 
-- Keep controllers thin: receive the request, delegate to DTO/service collaborators, and return a view name or response. Do not put token creation, cookie mechanics, password comparison, redirect URL construction, or manual form parsing in controllers.
-- Avoid parallel request parameters for structured inputs. If several fields form one logical request, bind a request DTO.
-- For `@ConfigurationProperties`, follow existing config style such as `AuthPolicyConfig`: public constructor `val` properties, no private backing fields, no custom getters, and no default values for required operational settings.
-- Name TTL properties after the thing that expires. For JWT expiry use `token-ttl`, not `session-ttl`.
 - Put Kotlin `companion object` near the top of the class body.
 - Keep Kotlin classes concise and constructor-injected.
 - Prefer explicit domain names over generic names.
@@ -151,7 +143,6 @@ Match the existing style unless there is a clear reason not to.
 - Prefer domain exceptions under the owning package over generic `IllegalArgumentException`.
 - Keep validation close to request DTOs when the rule is request-specific.
 - Keep transaction annotations on services, not controllers.
-- Use KotlinLogging for Kotlin code and Lombok `@Slf4j` for Java code; do not introduce raw `LoggerFactory` in Kotlin classes unless there is a specific reason.
 - Keep comments rare; delete stale TODOs instead of preserving outdated notes.
 - Use Java static factories or small Kotlin extension functions when Java Lombok builders make Kotlin call sites noisy; avoid adding broad converter classes for one-off simple transformations.
 
@@ -212,11 +203,6 @@ if (limit !in 1..500) throw BadLimitException()
 
 - Return simple response shapes that frontend code can consume directly.
 - Wrap controller JSON responses in `CommonResponse.success(...)`, `CommonResponse.emptySuccess()`, or `CommonResponse.failure(...)` unless an endpoint intentionally streams raw data.
-- DTO names must communicate direction and purpose: inbound client or outbound external-server requests end with `Request`, responses end with `Response`, and internal transfer shapes end with `DTO`.
-- Avoid vague DTO names such as `Row` or `Form` when a request/response/DTO suffix applies.
-- Prefer flat request/DTO shapes for one row or one logical item. Use a separate wrapper request only when the endpoint truly accepts a collection or whole-list replacement.
-- Avoid `request.toOtherRequest()` conversion methods. If conversion is actually needed, prefer `companion object { fun from(...) }` on the target type; if domains differ, prefer no cross-domain request conversion at all.
-- For POST endpoints that behave like JSON APIs, use `@RequestBody` instead of query parameters or form-style request parameters.
 - Use Spring Data `Slice` directly when the controller naturally returns a slice.
 - For cursor-style history reads, `last == false` means more historical data exists.
 - Use `OffsetDateTime` at API boundaries when clients send timezone-aware timestamps.
@@ -262,13 +248,6 @@ public record ValidHttpUrl(String value) {
 }
 ```
 
-## SSR Admin UI Guidance
-
-- Keep Thymeleaf templates focused on HTML structure and `th:*` binding. Move sizable CSS and JavaScript into Spring Boot static resources under `src/main/resources/static`.
-- For simple SSR admin pages, prefer native browser APIs such as `fetch` over adding frontend dependencies such as Axios unless there is a concrete need.
-- SSR pages may still submit save actions as JSON APIs when that keeps controller binding and validation cleaner.
-- When adding static resources under protected admin paths, explicitly permit/skip those CSS and JS paths in both Spring Security authorization and the auth policy resolver.
-
 ## Persistence And Migration Guidance
 
 - This project uses Flyway with `spring.jpa.hibernate.ddl-auto=validate`; every new entity/table/column needs a matching migration.
@@ -285,9 +264,6 @@ public record ValidHttpUrl(String value) {
   - constructor injection
   - `RestClient` for real HTTP calls
   - no mocks unless the user explicitly allows them
-- Prefer `@ActiveProfiles("dev")` when tests should run with the development profile; do not paste long `@SpringBootTest(properties = [...])` blocks with secrets/config into each test class.
-- Do not create `src/test/resources/application-dev.yaml` just to duplicate `src/main/resources/application-dev.yaml`. Tests should use the same dev profile file unless there is a genuinely test-only setting.
-- Required operational environment variables remain required in tests. Do not add `${ENV_VAR:default}` test fallbacks for required secrets such as `ADMIN_MASTER_PASSWORD`, `JWT_SECRET_KEY`, `AES256_KEY`, `SSO_CLIENT_ID`, or `WHOZIN_TOKEN` just to make tests run without environment setup.
 - Prefer testing real controller/service/repository/Flyway behavior when the request says E2E.
 - If tests use the development DB, isolate data by a clearly bounded test timestamp range and clean it up.
 - Verify invalid request cases return the expected domain error code.

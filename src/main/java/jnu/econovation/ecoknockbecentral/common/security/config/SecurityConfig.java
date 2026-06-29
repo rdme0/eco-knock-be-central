@@ -1,9 +1,7 @@
 package jnu.econovation.ecoknockbecentral.common.security.config;
 
-import jnu.econovation.ecoknockbecentral.common.security.filter.AdminMasterAuthFilter;
 import jnu.econovation.ecoknockbecentral.common.security.filter.JwtAuthFilter;
 import jnu.econovation.ecoknockbecentral.common.security.filter.SSORedirectParamFilter;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -30,12 +28,9 @@ import java.util.List;
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-    private static final String ADMIN_PATH = "/admin";
-    private static final String ADMIN_PATH_PREFIX = "/admin/";
     private static final long CORS_MAX_AGE = 3600L;
 
     private final UriSecurityConfig uriSecurityConfig;
-    private final AdminMasterAuthFilter adminMasterAuthFilter;
     private final JwtAuthFilter jwtAuthFilter;
     private final SSORedirectParamFilter ssoRedirectParamFilter;
 
@@ -80,12 +75,6 @@ public class SecurityConfig {
                                 "/error",
                                 "/favicon.ico"
                         ).permitAll()
-                        .requestMatchers(HttpMethod.GET, "/admin/login").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/admin/*.css", "/admin/*.js").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/admin/login/master").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/admin/logout").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/admin/access-denied").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/admin", "/admin/").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/sso/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/sso/callback").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/reissue").permitAll()
@@ -93,18 +82,6 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable)
-                .exceptionHandling(exception -> exception
-                        .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            String uri = request.getRequestURI();
-                            if (ADMIN_PATH.equals(uri) || uri.startsWith(ADMIN_PATH_PREFIX)) {
-                                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                                request.getRequestDispatcher("/admin/access-denied").forward(request, response);
-                                return;
-                            }
-
-                            response.sendError(HttpServletResponse.SC_FORBIDDEN);
-                        })
-                )
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
@@ -115,10 +92,6 @@ public class SecurityConfig {
                 .addFilterBefore(
                         jwtAuthFilter,
                         UsernamePasswordAuthenticationFilter.class
-                )
-                .addFilterBefore(
-                        adminMasterAuthFilter,
-                        JwtAuthFilter.class
                 )
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
