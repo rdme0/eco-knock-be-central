@@ -356,13 +356,10 @@ GET /air-quality/timeseries?resolution=5m&from=2026-04-22T00:00:00Z&to=2026-04-2
       {
         "time": "2026-04-22T09:00:00+09:00",
         "end": "2026-04-22T09:05:00+09:00",
-        "pm25": 15.0,
-        "pm25Min": 10,
-        "pm25Max": 20,
+        "pm25Quality": "GOOD",
         "humidity": 50.0,
         "temperature": 21.0,
-        "eco2": 600.0,
-        "bvoc": 0.2,
+        "gasQuality": "VERY_GOOD",
         "sampleCount": 2
       }
     ],
@@ -408,17 +405,18 @@ data: ok
 
 공기질 저장 성공 시 `air-quality` 이벤트로 최신 데이터를 전송합니다. 이벤트 데이터는 `CommonResponse<AirQualityRealtimeResponse>` 형태입니다.
 
+`pm25Quality`와 `gasQuality`는 `VERY_BAD`, `BAD`, `NORMAL`, `GOOD`, `VERY_GOOD` 중 하나입니다. `pm25Quality`는 PM2.5 값을 기준으로, `gasQuality`는 eCO2와 BVOC 중 더 나쁜 등급을 기준으로 계산합니다.
+
 ```json
 {
   "isSuccess": true,
   "message": "success",
   "result": {
     "measuredAt": "2026-04-22T09:00:00+09:00",
-    "pm25": 15,
+    "pm25Quality": "GOOD",
     "humidity": 50.0,
     "temperature": 21.0,
-    "estimatedEco2PPM": 600.0,
-    "estimatedBvocPPM": 0.2,
+    "gasQuality": "VERY_GOOD",
     "accuracy": 3
   }
 }
