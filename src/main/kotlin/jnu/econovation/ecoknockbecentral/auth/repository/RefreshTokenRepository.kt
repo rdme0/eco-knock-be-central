@@ -36,17 +36,21 @@ class RefreshTokenRepository(
         redisTemplate.opsForValue().set(
             key(memberId),
             tokenId,
-            authPolicyConfig.refreshTokenTTL(),
+            authPolicyConfig.refreshTokenTTL,
         )
     }
 
-    fun replaceIfMatches(memberId: Long, currentTokenId: String, nextTokenId: String): RefreshTokenRotationResult {
+    fun replaceIfMatches(
+        memberId: Long,
+        currentTokenId: String,
+        nextTokenId: String
+    ): RefreshTokenRotationResult {
         val result = redisTemplate.execute(
             ROTATE_SCRIPT,
             listOf(key(memberId)),
             currentTokenId,
             nextTokenId,
-            authPolicyConfig.refreshTokenTTL().toMillis().toString(),
+            authPolicyConfig.refreshTokenTTL.toMillis().toString(),
         )
 
         return when (result) {

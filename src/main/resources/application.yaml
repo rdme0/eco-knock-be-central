@@ -20,12 +20,18 @@ security:
   auth-policy:
     access-token-ttl: 6h
     refresh-token-ttl: 60d
+  admin:
+    master-password: ${ADMIN_MASTER_PASSWORD}
+    master-token-ttl: 1h
   jwt:
     secret-key: ${JWT_SECRET_KEY}
   aes256:
     key: ${AES256_KEY}
   uri:
     allowed-front-end-origins:
+      - http://localhost:*
+      - https://localhost:*
+    allowed-admin-origins:
       - http://localhost:*
       - https://localhost:*
 

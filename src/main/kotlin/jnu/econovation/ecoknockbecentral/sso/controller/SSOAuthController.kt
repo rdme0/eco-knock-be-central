@@ -55,7 +55,7 @@ class SSOAuthController(
             response,
             ACCESS_TOKEN,
             result.accessToken,
-            authPolicyConfig.accessTokenTTL().toSeconds().toInt(),
+            authPolicyConfig.accessTokenTTL.toSeconds().toInt(),
         )
 
         CookieUtil.addCookie(
@@ -63,7 +63,7 @@ class SSOAuthController(
             response,
             REFRESH_TOKEN,
             result.refreshToken,
-            authPolicyConfig.refreshTokenTTL().toSeconds().toInt(),
+            authPolicyConfig.refreshTokenTTL.toSeconds().toInt(),
         )
 
         CookieUtil.removeCookie(request, response, SSO_REDIRECT_URL_KEY)

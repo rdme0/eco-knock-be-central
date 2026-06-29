@@ -1,8 +1,8 @@
 package jnu.econovation.ecoknockbecentral.sso.service
 
 import jnu.econovation.ecoknockbecentral.auth.repository.RefreshTokenRepository
-import jnu.econovation.ecoknockbecentral.common.security.util.JwtUtil
 import jnu.econovation.ecoknockbecentral.common.exception.server.InternalServerException
+import jnu.econovation.ecoknockbecentral.common.security.util.JwtUtil
 import jnu.econovation.ecoknockbecentral.member.service.MemberService
 import jnu.econovation.ecoknockbecentral.sso.client.SSOAuthClient
 import jnu.econovation.ecoknockbecentral.sso.dto.SSOAuthResultDTO
@@ -26,7 +26,7 @@ class SSOAuthService(
         }
 
         val response: SSOMeResponse = ssoAuthClient.getMe(ssoAccessToken)
-        val memberInfo = memberService.getOrSaveFromSso(dto = SSOMeDTO.from(response))
+        val memberInfo = memberService.getOrSaveFromSSO(dto = SSOMeDTO.from(response))
         val accessToken = jwtUtil.generateAccessToken(memberInfo)
         val refreshToken = jwtUtil.generateRefreshToken(memberInfo)
         val refreshTokenId = jwtUtil.extractTokenId(refreshToken)
