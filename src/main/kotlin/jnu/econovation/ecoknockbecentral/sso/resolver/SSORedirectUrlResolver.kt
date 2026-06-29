@@ -18,34 +18,17 @@ class SSORedirectUrlResolver(
     private val matcher = AntPathMatcher()
 
     fun resolve(rawRedirectUrl: String?): String {
-        val normalizedUrl = normalizeOrThrow(rawRedirectUrl)
-
-        if (!isAllowed(normalizedUrl, config.allowedFrontEndOrigins() + config.allowedAdminOrigins())) {
-            logger.warn { "유효하지 않은 SSO redirect url, raw -> $rawRedirectUrl, normalized -> $normalizedUrl" }
-            throw BadRedirectUrlException()
-        }
-
-        return normalizedUrl
-    }
-
-    fun resolveAdmin(rawRedirectUrl: String?): String {
-        val normalizedUrl = normalizeOrThrow(rawRedirectUrl)
-
-        if (!isAllowed(normalizedUrl, config.allowedAdminOrigins())) {
-            logger.warn { "유효하지 않은 admin redirect url, raw -> $rawRedirectUrl, normalized -> $normalizedUrl" }
-            throw BadRedirectUrlException()
-        }
-
-        return normalizedUrl
-    }
-
-    private fun normalizeOrThrow(rawRedirectUrl: String?): String {
         val normalizedUrl = rawRedirectUrl
             ?.takeIf { it.isNotBlank() }
             ?.let { normalizeUrl(it) }
 
         if (normalizedUrl.isNullOrBlank()) {
             logger.warn { "유효하지 않은 SSO redirect url : Null or Blank" }
+            throw BadRedirectUrlException()
+        }
+
+        if (!isAllowed(normalizedUrl)) {
+            logger.warn { "유효하지 않은 SSO redirect url, raw -> $rawRedirectUrl, normalized -> $normalizedUrl" }
             throw BadRedirectUrlException()
         }
 
@@ -66,14 +49,14 @@ class SSORedirectUrlResolver(
         }
     }
 
-    private fun isAllowed(url: String?, allowedOrigins: List<String>): Boolean {
+    private fun isAllowed(url: String?): Boolean {
         if (url.isNullOrBlank()) {
             return false
         }
 
         val origin = originOf(url) ?: return false
 
-        return allowedOrigins.any { pattern ->
+        return config.allowedFrontEndOrigins().any { pattern ->
             matcher.match(pattern.trimEnd('/'), origin)
         }
     }

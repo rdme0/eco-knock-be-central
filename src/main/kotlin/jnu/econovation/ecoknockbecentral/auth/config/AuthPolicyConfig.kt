@@ -5,6 +5,10 @@ import java.time.Duration
 
 @ConfigurationProperties(prefix = "security.auth-policy")
 data class AuthPolicyConfig(
-    val accessTokenTTL: Duration,
-    val refreshTokenTTL: Duration,
-)
+    private val accessTokenTTL: Duration,
+    private val refreshTokenTTL: Duration,
+) {
+    fun accessTokenTTL(): Duration = accessTokenTTL
+
+    fun refreshTokenTTL(): Duration = refreshTokenTTL
+}

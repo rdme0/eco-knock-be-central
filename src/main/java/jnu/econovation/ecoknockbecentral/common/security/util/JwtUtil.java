@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
-import java.time.Duration;
 import java.util.Date;
 import java.util.UUID;
 
@@ -20,7 +19,6 @@ public class JwtUtil{
     private static final String TOKEN_TYPE_CLAIM = "type";
     private static final String ACCESS_TOKEN_TYPE = "ACCESS";
     private static final String REFRESH_TOKEN_TYPE = "REFRESH";
-    private static final String ADMIN_MASTER_TOKEN_TYPE = "ADMIN_MASTER";
 
     @Value("${security.jwt.secret-key}")
     private String secretKey;
@@ -65,7 +63,7 @@ public class JwtUtil{
                 .claim("id", memberInfo.getId())
                 .claim(TOKEN_TYPE_CLAIM, ACCESS_TOKEN_TYPE)
                 .issuedAt(new Date(now))
-                .expiration(new Date(now + authPolicyConfig.getAccessTokenTTL().toMillis()))
+                .expiration(new Date(now + authPolicyConfig.accessTokenTTL().toMillis()))
                 .signWith(key)
                 .compact();
     }
@@ -79,19 +77,7 @@ public class JwtUtil{
                 .claim("id", memberInfo.getId())
                 .claim(TOKEN_TYPE_CLAIM, REFRESH_TOKEN_TYPE)
                 .issuedAt(new Date(now))
-                .expiration(new Date(now + authPolicyConfig.getRefreshTokenTTL().toMillis()))
-                .signWith(key)
-                .compact();
-    }
-
-    public String generateAdminMasterToken(Duration ttl) {
-        long now = System.currentTimeMillis();
-
-        return Jwts.builder()
-                .subject("admin-master")
-                .claim(TOKEN_TYPE_CLAIM, ADMIN_MASTER_TOKEN_TYPE)
-                .issuedAt(new Date(now))
-                .expiration(new Date(now + ttl.toMillis()))
+                .expiration(new Date(now + authPolicyConfig.refreshTokenTTL().toMillis()))
                 .signWith(key)
                 .compact();
     }
@@ -115,10 +101,6 @@ public class JwtUtil{
 
     public boolean validateRefreshToken(String token) {
         return validateTokenType(token, REFRESH_TOKEN_TYPE);
-    }
-
-    public boolean validateAdminMasterToken(String token) {
-        return validateTokenType(token, ADMIN_MASTER_TOKEN_TYPE);
     }
 
     private boolean validateTokenType(String token, String tokenType) {
