@@ -11,11 +11,13 @@ import jnu.econovation.ecoknockbecentral.common.exception.server.InternalServerE
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.springframework.beans.BeanInstantiationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -119,6 +121,23 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return handleExceptionInternal(ErrorCode.INVALID_INPUT_VALUE, message);
     }
 
+    @ExceptionHandler(BindException.class)
+    public ResponseEntity<Object> handleBindException(BindException ex) {
+        ResponseEntity<Object> clientResponse = handleClientCauseOrNull(ex);
+        if (clientResponse != null) {
+            return clientResponse;
+        }
+
+        String message = ex.getBindingResult().getFieldErrors().stream()
+                .findFirst()
+                .map(FieldError::getDefaultMessage)
+                .orElse("잘못된 요청입니다.");
+
+        log.warn("Bind exception: {}", message);
+
+        return handleExceptionInternal(ErrorCode.INVALID_INPUT_VALUE, message);
+    }
+
     @ExceptionHandler(JsonProcessingException.class)
     public ResponseEntity<Object> handleJsonProcessingException(
             JsonProcessingException ex
@@ -150,6 +169,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         log.warn("클라이언트 예외 발생: Code={}, Message={}", e.getErrorCode().getCode(), e.getMessage());
 
         return handleClientExceptionInternal(e);
+    }
+
+    @ExceptionHandler(BeanInstantiationException.class)
+    public ResponseEntity<Object> handleBeanInstantiationException(BeanInstantiationException e) {
+        ResponseEntity<Object> clientResponse = handleClientCauseOrNull(e);
+        if (clientResponse != null) {
+            return clientResponse;
+        }
+
+        log.warn("Bean instantiation exception: {}", e.getMessage());
+
+        return handleExceptionInternal(ErrorCode.INVALID_INPUT_VALUE, e.getMessage());
     }
 
 
