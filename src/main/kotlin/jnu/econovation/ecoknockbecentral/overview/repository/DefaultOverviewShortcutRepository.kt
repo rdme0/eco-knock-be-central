@@ -5,4 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface DefaultOverviewShortcutRepository : JpaRepository<DefaultOverviewShortcut, Long>
+interface DefaultOverviewShortcutRepository : JpaRepository<DefaultOverviewShortcut, Long> {
+
+    fun findAllByOrderBySortOrderAsc(): List<DefaultOverviewShortcut>
+
+}
