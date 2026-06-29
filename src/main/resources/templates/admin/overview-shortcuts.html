@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>기본 모아두기</title>
+    <link rel="stylesheet" href="../../static/admin/overview-shortcuts.css" th:href="@{/admin/overview-shortcuts.css}">
+</head>
+<body>
+<main>
+    <header class="admin-header">
+        <div>
+            <h1>기본 모아두기</h1>
+            <div class="count"><span id="rowCount" th:text="${#lists.size(rows)}">0</span> / 10</div>
+        </div>
+        <form class="logout" method="post" th:action="@{/admin/logout}">
+            <button type="submit">로그아웃</button>
+        </form>
+    </header>
+
+    <div id="successMessage" class="notice success" hidden></div>
+    <div id="errorMessage" class="notice error" hidden></div>
+
+    <div class="admin-shell">
+        <section class="editor-panel" aria-labelledby="editorTitle">
+            <div class="panel-heading">
+                <div>
+                    <h2 id="editorTitle">Shortcut Editor</h2>
+                    <div class="panel-meta">default_overview_shortcut</div>
+                </div>
+            </div>
+
+            <form id="shortcutForm" method="post" th:action="@{/admin/overview-shortcuts}">
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>순서</th>
+                            <th>이름</th>
+                            <th>아이콘 URL</th>
+                            <th>이동 URL</th>
+                            <th>작업</th>
+                        </tr>
+                        </thead>
+                        <tbody id="shortcutRows">
+                        <tr th:each="row, status : ${rows}">
+                            <td class="order">
+                                <input data-field="sortOrder" th:name="|shortcuts[${status.index}].sortOrder|" th:value="${row.sortOrder}" readonly>
+                            </td>
+                            <td class="name">
+                                <input data-field="name" th:name="|shortcuts[${status.index}].name|" th:value="${row.name}" maxlength="10" required>
+                            </td>
+                            <td>
+                                <input data-field="iconUrl" th:name="|shortcuts[${status.index}].iconUrl|" th:value="${row.iconUrl.value}" type="url" required>
+                            </td>
+                            <td>
+                                <input data-field="targetUrl" th:name="|shortcuts[${status.index}].targetUrl|" th:value="${row.targetUrl.value}" type="url" required>
+                            </td>
+                            <td class="actions">
+                                <button type="button" data-action="up">위</button>
+                                <button type="button" data-action="down">아래</button>
+                                <button type="button" class="danger" data-action="remove">삭제</button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="toolbar">
+                    <button type="button" id="addRow">행 추가</button>
+                    <div class="group">
+                        <button type="submit" class="primary">저장</button>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <aside class="preview-panel" aria-labelledby="previewTitle">
+            <div class="panel-heading">
+                <div>
+                    <h2 id="previewTitle">Live Preview</h2>
+                    <div class="panel-meta">mobile overview</div>
+                </div>
+            </div>
+
+            <div id="previewRoot" class="phone-preview" aria-label="overview shortcut preview">
+                <div class="phone-screen">
+                    <div class="phone-brand">ECO-KNOCK</div>
+
+                    <section class="collection-card" aria-label="knock collection preview">
+                        <div class="collection-header">
+                            <span>KNOCK COLLECTION</span>
+                            <div class="collection-actions" aria-hidden="true">
+                                <span class="circle-check"></span>
+                                <span class="grid-mark"></span>
+                            </div>
+                        </div>
+                        <div id="previewShortcutGrid" class="preview-shortcut-grid"></div>
+                    </section>
+
+                </div>
+            </div>
+        </aside>
+    </div>
+</main>
+
+<template id="rowTemplate">
+    <tr>
+        <td class="order">
+            <input data-field="sortOrder" name="shortcuts[0].sortOrder" value="0" readonly>
+        </td>
+        <td class="name">
+            <input data-field="name" name="shortcuts[0].name" maxlength="10" required>
+        </td>
+        <td>
+            <input data-field="iconUrl" name="shortcuts[0].iconUrl" type="url" required>
+        </td>
+        <td>
+            <input data-field="targetUrl" name="shortcuts[0].targetUrl" type="url" required>
+        </td>
+        <td class="actions">
+            <button type="button" data-action="up">위</button>
+            <button type="button" data-action="down">아래</button>
+            <button type="button" class="danger" data-action="remove">삭제</button>
+        </td>
+    </tr>
+</template>
+
+<script src="../../static/admin/overview-shortcuts.js" th:src="@{/admin/overview-shortcuts.js}"></script>
+</body>
+</html>
