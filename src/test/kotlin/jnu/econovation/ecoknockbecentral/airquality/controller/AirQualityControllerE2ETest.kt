@@ -2,9 +2,6 @@ package jnu.econovation.ecoknockbecentral.airquality.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import jnu.econovation.ecoknockbecentral.EcoKnockBeCentralApplication
-import jnu.econovation.ecoknockbecentral.airquality.dto.request.AirQualityResolution
-import jnu.econovation.ecoknockbecentral.airquality.dto.request.GetTimeseriesHistoryRequest
-import jnu.econovation.ecoknockbecentral.airquality.dto.request.GetTimeseriesRequest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -75,12 +72,7 @@ class AirQualityControllerE2ETest(
     @DisplayName("타임시리즈 범위 조회는 토큰 없이 꺾은선 그래프 포인트를 반환한다")
     fun timeseriesReturnsLineGraphPointsWithoutToken() {
         val response = get(
-            path = "/air-quality/timeseries",
-            body = GetTimeseriesRequest(
-                resolution = AirQualityResolution.FIVE_MINUTES,
-                from = ZonedDateTime.parse("2099-01-01T00:00:00Z").toOffsetDateTime(),
-                to = ZonedDateTime.parse("2099-01-01T00:10:00Z").toOffsetDateTime(),
-            )
+            "/air-quality/timeseries?resolution=5m&from=2099-01-01T00:00:00Z&to=2099-01-01T00:10:00Z"
         )
 
         assertThat(response.statusCode)
@@ -88,23 +80,29 @@ class AirQualityControllerE2ETest(
             .isEqualTo(HttpStatus.OK)
 
         val body = mapper.readTree(response.body)
-        val points = body.path("content")
+        val result = body.path("result")
+        val points = result.path("content")
 
         assertThat(points).hasSize(2)
-        assertThat(body.path("last").asBoolean()).isTrue()
+        assertThat(result.path("last").asBoolean()).isTrue()
 
         val first = points[0]
         assertThat(ZonedDateTime.parse(first.path("time").asText()).toInstant())
             .isEqualTo(Instant.parse("2099-01-01T00:00:00Z"))
-        assertThat(first.path("pm25").asDouble()).isEqualTo(15.0)
-        assertThat(first.path("pm25Min").asInt()).isEqualTo(10)
-        assertThat(first.path("pm25Max").asInt()).isEqualTo(20)
+        assertThat(first.path("pm25Quality").asText()).isEqualTo("GOOD")
+        assertThat(first.path("gasQuality").asText()).isEqualTo("VERY_GOOD")
+        assertThat(first.has("pm25")).isFalse()
+        assertThat(first.has("pm25Min")).isFalse()
+        assertThat(first.has("pm25Max")).isFalse()
+        assertThat(first.has("eco2")).isFalse()
+        assertThat(first.has("bvoc")).isFalse()
         assertThat(first.path("sampleCount").asLong()).isEqualTo(2)
 
         val second = points[1]
         assertThat(ZonedDateTime.parse(second.path("time").asText()).toInstant())
             .isEqualTo(Instant.parse("2099-01-01T00:05:00Z"))
-        assertThat(second.path("pm25").asDouble()).isEqualTo(30.0)
+        assertThat(second.path("pm25Quality").asText()).isEqualTo("NORMAL")
+        assertThat(second.path("gasQuality").asText()).isEqualTo("GOOD")
         assertThat(second.path("sampleCount").asLong()).isEqualTo(1)
     }
 
@@ -112,12 +110,7 @@ class AirQualityControllerE2ETest(
     @DisplayName("타임시리즈 히스토리 조회는 before 이전 포인트를 최신순 limit 기준으로 잘라 반환한다")
     fun historyReturnsPreviousLineGraphPointsWithoutToken() {
         val response = get(
-            path = "/air-quality/timeseries/history",
-            body = GetTimeseriesHistoryRequest(
-                resolution = AirQualityResolution.FIVE_MINUTES,
-                before = ZonedDateTime.parse("2099-01-01T00:10:00Z").toOffsetDateTime(),
-                limit = 1,
-            )
+            "/air-quality/timeseries/history?resolution=5m&before=2099-01-01T00:10:00Z&limit=1"
         )
 
         assertThat(response.statusCode)
@@ -125,48 +118,36 @@ class AirQualityControllerE2ETest(
             .isEqualTo(HttpStatus.OK)
 
         val body = mapper.readTree(response.body)
-        val points = body.path("content")
+        val result = body.path("result")
+        val points = result.path("content")
 
         assertThat(points).hasSize(1)
-        assertThat(body.path("last").asBoolean()).isFalse()
+        assertThat(result.path("last").asBoolean()).isFalse()
         assertThat(ZonedDateTime.parse(points[0].path("time").asText()).toInstant())
             .isEqualTo(Instant.parse("2099-01-01T00:05:00Z"))
-        assertThat(points[0].path("pm25").asDouble()).isEqualTo(30.0)
+        assertThat(points[0].path("pm25Quality").asText()).isEqualTo("NORMAL")
+        assertThat(points[0].path("gasQuality").asText()).isEqualTo("GOOD")
     }
 
     @Test
-    @DisplayName("지원하지 않는 resolution은 AirQuality 도메인 에러로 응답한다")
+    @DisplayName("지원하지 않는 resolution은 공통 입력 에러로 응답한다")
     fun timeseriesReturnsBusinessErrorForUnsupportedResolution() {
-        val response = getRawJson(
-            path = "/air-quality/timeseries",
-            body = """
-                {
-                  "resolution": "10m",
-                  "from": "2099-01-01T00:00:00Z",
-                  "to": "2099-01-01T00:10:00Z"
-                }
-            """.trimIndent()
+        val response = get(
+            "/air-quality/timeseries?resolution=10m&from=2099-01-01T00:00:00Z&to=2099-01-01T00:10:00Z"
         )
 
         assertThat(response.statusCode).isEqualTo(HttpStatus.BAD_REQUEST)
 
         val body = mapper.readTree(response.body)
         assertThat(body.path("success").asBoolean()).isFalse()
-        assertThat(body.path("errorCode").asText()).isEqualTo("AIR_QUALITY_400_002")
+        assertThat(body.path("errorCode").asText()).isEqualTo("COMMON_400_001")
     }
 
     @Test
     @DisplayName("history limit이 범위를 벗어나면 AirQuality 도메인 에러로 응답한다")
     fun historyReturnsBusinessErrorForInvalidLimit() {
-        val response = getRawJson(
-            path = "/air-quality/timeseries/history",
-            body = """
-                {
-                  "resolution": "5m",
-                  "before": "2099-01-01T00:10:00Z",
-                  "limit": 0
-                }
-            """.trimIndent()
+        val response = get(
+            "/air-quality/timeseries/history?resolution=5m&before=2099-01-01T00:10:00Z&limit=0"
         )
 
         assertThat(response.statusCode).isEqualTo(HttpStatus.BAD_REQUEST)
@@ -201,20 +182,9 @@ class AirQualityControllerE2ETest(
         assertThat(response.body).anyMatch { it.contains("ok") }
     }
 
-    private fun get(
-        path: String,
-        body: Any,
-    ): ResponseEntity<String> {
-        return getRawJson(path, mapper.writeValueAsString(body))
-    }
-
-    private fun getRawJson(
-        path: String,
-        body: String,
-    ): ResponseEntity<String> {
+    private fun get(path: String): ResponseEntity<String> {
         return restClient.method(HttpMethod.GET)
             .uri(path)
-            .body(body)
             .exchange { _, response ->
                 ResponseEntity
                     .status(response.statusCode)

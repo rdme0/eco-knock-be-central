@@ -1,16 +1,16 @@
 package jnu.econovation.ecoknockbecentral.airquality.dto.response
 
 import jnu.econovation.ecoknockbecentral.airquality.command.SaveAirQualityCommand
+import jnu.econovation.ecoknockbecentral.airquality.dto.Quality
 import jnu.econovation.ecoknockbecentral.common.extension.toZonedDateTime
 import java.time.ZonedDateTime
 
 data class AirQualityRealtimeResponse(
     val measuredAt: ZonedDateTime,
-    val pm25: Int,
+    val pm25Quality: Quality,
     val humidity: Double,
     val temperature: Double,
-    val estimatedEco2PPM: Double,
-    val estimatedBvocPPM: Double,
+    val gasQuality: Quality,
     val accuracy: Int,
 ) {
     companion object {
@@ -19,11 +19,13 @@ data class AirQualityRealtimeResponse(
 
             return AirQualityRealtimeResponse(
                 measuredAt = command.rawSensor.measuredAt.toZonedDateTime(),
-                pm25 = airQuality.pm25,
+                pm25Quality = Quality.fromPm25(airQuality.pm25),
                 humidity = airQuality.humidity,
                 temperature = airQuality.temperature,
-                estimatedEco2PPM = airQuality.estimatedEco2PPM,
-                estimatedBvocPPM = airQuality.estimatedBvocPPM,
+                gasQuality = Quality.fromGas(
+                    eco2 = airQuality.estimatedEco2PPM,
+                    bvoc = airQuality.estimatedBvocPPM,
+                ),
                 accuracy = airQuality.accuracy,
             )
         }
