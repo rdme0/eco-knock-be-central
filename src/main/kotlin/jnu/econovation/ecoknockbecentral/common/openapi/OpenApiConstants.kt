@@ -1,0 +1,28 @@
+package jnu.econovation.ecoknockbecentral.common.openapi
+
+object OpenApiConstants {
+    const val COMMON_RESPONSE = "공통 응답 래퍼"
+    const val ERROR_RESPONSE = "공통 에러 응답"
+    const val REDIRECT_RESPONSE = "리다이렉트 응답"
+    const val SSE_RESPONSE = "Server-Sent Events stream"
+
+    const val EMPTY_SUCCESS_EXAMPLE_NAME = "EmptySuccess"
+    const val BAD_DATA_SYNTAX_EXAMPLE_NAME = "BadDataSyntax"
+    const val BAD_DATA_MEANING_EXAMPLE_NAME = "BadDataMeaning"
+    const val INVALID_REDIRECT_URI_EXAMPLE_NAME = "InvalidRedirectUri"
+    const val BAD_SSO_TOKEN_EXAMPLE_NAME = "BadSsoToken"
+    const val BAD_REFRESH_TOKEN_EXAMPLE_NAME = "BadRefreshToken"
+    const val UNAUTHORIZED_EXAMPLE_NAME = "Unauthorized"
+    const val AIR_QUALITY_BAD_REQUEST_EXAMPLE_NAME = "BadAirQualityResolution"
+    const val AIR_QUALITY_HISTORY_LIMIT_EXAMPLE_NAME = "BadAirQualityHistoryLimit"
+
+    const val EMPTY_SUCCESS_EXAMPLE_REF = "#/components/examples/EmptySuccess"
+    const val BAD_DATA_SYNTAX_EXAMPLE_REF = "#/components/examples/BadDataSyntax"
+    const val BAD_DATA_MEANING_EXAMPLE_REF = "#/components/examples/BadDataMeaning"
+    const val INVALID_REDIRECT_URI_EXAMPLE_REF = "#/components/examples/InvalidRedirectUri"
+    const val BAD_SSO_TOKEN_EXAMPLE_REF = "#/components/examples/BadSsoToken"
+    const val BAD_REFRESH_TOKEN_EXAMPLE_REF = "#/components/examples/BadRefreshToken"
+    const val UNAUTHORIZED_EXAMPLE_REF = "#/components/examples/Unauthorized"
+    const val AIR_QUALITY_BAD_REQUEST_EXAMPLE_REF = "#/components/examples/BadAirQualityResolution"
+    const val AIR_QUALITY_HISTORY_LIMIT_EXAMPLE_REF = "#/components/examples/BadAirQualityHistoryLimit"
+}

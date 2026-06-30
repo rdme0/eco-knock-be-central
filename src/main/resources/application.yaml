@@ -16,6 +16,17 @@ spring:
 server:
   port: 18081
 
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  info:
+    title: eco-knock-be-central API
+    version: 0.0.1-SNAPSHOT
+
+scalar:
+  enabled: true
+  path: /scalar
+
 security:
   auth-policy:
     access-token-ttl: 6h

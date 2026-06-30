@@ -75,11 +75,50 @@ a {
     align-items: center;
     justify-content: space-between;
     gap: 24px;
+    margin-bottom: 16px;
     padding: 28px;
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 8px;
     box-shadow: 0 16px 40px rgba(31, 45, 70, 0.08);
+}
+
+.api-doc-panel {
+    align-items: flex-start;
+}
+
+.button-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    margin-top: 14px;
+    padding: 0 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--muted);
+    background: #f8fafc;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.status-pill[data-enabled="true"] {
+    color: #0f7b45;
+    border-color: #b7e2ca;
+    background: #ecfdf3;
+}
+
+.status-pill[data-enabled="false"] {
+    color: #9d3d35;
+    border-color: #f1c1bd;
+    background: #fff1f0;
 }
 
 .primary-button,
@@ -115,6 +154,12 @@ a {
     border-color: var(--primary);
 }
 
+.primary-button:disabled,
+.ghost-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 @media (max-width: 640px) {
     .admin-home {
         width: min(100% - 28px, 960px);
@@ -133,6 +178,10 @@ a {
 
     .primary-button,
     .ghost-button {
+        width: 100%;
+    }
+
+    .button-group {
         width: 100%;
     }
 }

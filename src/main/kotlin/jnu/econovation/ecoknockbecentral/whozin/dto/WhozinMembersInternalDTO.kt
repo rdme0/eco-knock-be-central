@@ -86,7 +86,7 @@ data class WhozinUser(
                     .plusMinutes(minute?.toLong() ?: 0L)
             }.getOrElse {
                 throw InternalServerException(
-                    IllegalStateException("올바르지 않은 동방에 있는 시간 응답 -> $value", it,)
+                    IllegalStateException("올바르지 않은 동방에 있는 시간 응답 -> $value", it)
                 )
             }
         }

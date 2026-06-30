@@ -9,7 +9,7 @@ import org.springframework.data.domain.Slice
 
 @UseCase
 interface QueryAirQualityUseCase {
-    fun queryAirQuality() : GetAirQualityResponse
+    fun queryAirQuality(): GetAirQualityResponse
 
     fun queryAirQualityTimeseries(request: GetTimeseriesRequest): Slice<AirQualityTimeseriesPointResponse>
 

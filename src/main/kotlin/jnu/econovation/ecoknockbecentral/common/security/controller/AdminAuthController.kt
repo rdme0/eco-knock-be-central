@@ -1,5 +1,6 @@
 package jnu.econovation.ecoknockbecentral.common.security.controller
 
+import io.swagger.v3.oas.annotations.Hidden
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import jnu.econovation.ecoknockbecentral.common.cookie.util.CookieUtil
@@ -9,14 +10,11 @@ import jnu.econovation.ecoknockbecentral.common.security.service.AdminMasterAuth
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.ResponseStatus
+import org.springframework.web.bind.annotation.*
 
 @Controller
 @RequestMapping("/admin")
+@Hidden
 class AdminAuthController(
     private val adminMasterAuthService: AdminMasterAuthService,
     private val adminLoginUrlService: AdminLoginUrlService,
