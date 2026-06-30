@@ -2,6 +2,7 @@ package jnu.econovation.ecoknockbecentral.overview.model.vo;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Embeddable;
 import jnu.econovation.ecoknockbecentral.common.exception.client.BadDataMeaningException;
 import jnu.econovation.ecoknockbecentral.common.exception.client.BadDataSyntaxException;
@@ -9,6 +10,7 @@ import jnu.econovation.ecoknockbecentral.common.exception.client.BadDataSyntaxEx
 import java.net.URI;
 
 @Embeddable
+@Schema(type = "string", description = "http 또는 https URL", example = "https://example.com")
 public record ValidHttpUrl(String value) {
     private static final int MAX_URL_LENGTH = 2048;
 
