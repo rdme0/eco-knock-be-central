@@ -3,6 +3,7 @@ package jnu.econovation.ecoknockbecentral.common.security.config;
 import jnu.econovation.ecoknockbecentral.common.security.filter.AdminMasterAuthFilter;
 import jnu.econovation.ecoknockbecentral.common.security.filter.JwtAuthFilter;
 import jnu.econovation.ecoknockbecentral.common.security.filter.SSORedirectParamFilter;
+import jnu.econovation.ecoknockbecentral.common.openapi.ApiDocAccessFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -36,6 +37,7 @@ public class SecurityConfig {
 
     private final UriSecurityConfig uriSecurityConfig;
     private final AdminMasterAuthFilter adminMasterAuthFilter;
+    private final ApiDocAccessFilter apiDocAccessFilter;
     private final JwtAuthFilter jwtAuthFilter;
     private final SSORedirectParamFilter ssoRedirectParamFilter;
 
@@ -77,6 +79,11 @@ public class SecurityConfig {
                                 "/actuator/info",
                                 "/actuator/prometheus",
                                 "/air-quality/stream",
+                                "/scalar",
+                                "/scalar/**",
+                                "/v3/api-docs",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs.yaml",
                                 "/error",
                                 "/favicon.ico"
                         ).permitAll()
@@ -118,6 +125,10 @@ public class SecurityConfig {
                 )
                 .addFilterBefore(
                         adminMasterAuthFilter,
+                        JwtAuthFilter.class
+                )
+                .addFilterBefore(
+                        apiDocAccessFilter,
                         JwtAuthFilter.class
                 )
                 .httpBasic(AbstractHttpConfigurer::disable)

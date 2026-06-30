@@ -1,0 +1,4 @@
+interface:
+  display_name: "API Doc Maintainer"
+  short_description: "Keep Scalar/OpenAPI docs aligned with endpoint changes."
+  default_prompt: "Use $api-doc-maintainer when adding or changing eco-knock-be-central API endpoints so Scalar and /v3/api-docs stay accurate."

@@ -37,7 +37,7 @@ class WhozinClient(
                     it.path(MEMBERS_PATH)
                         .queryParam("year", year)
                         .queryParam("month", month)
-                        .apply { day?.let { queryParam("day", day)} }
+                        .apply { day?.let { queryParam("day", day) } }
                         .build()
                 }
                 .header(HttpHeaders.AUTHORIZATION, "${BEARER_PREFIX}${config.token}")
