@@ -14,6 +14,7 @@ plugins {
 def jwtVersion = '0.13.0'
 def grpcVersion = '1.80.0'
 def protobufVersion = '4.34.1'
+def springdocVersion = '3.0.3'
 
 group = 'jnu.econovation'
 version = '0.0.1-SNAPSHOT'
@@ -46,6 +47,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-flyway'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-scalar:${springdocVersion}"
 
     //spring-security
     implementation 'org.springframework.boot:spring-boot-starter-security'
