@@ -47,6 +47,12 @@ security:
       - https://localhost:*
       - ${PROD_THIS_SERVER_URL}
 
+embedded:
+  grpc:
+    host: ${EMBEDDED_SERVER_HOST}
+    port: ${EMBEDDED_SERVER_GRPC_PORT}
+    timeout: 3s
+
 sso:
   base-url: https://auth.econovation.kr
   client-id: ${SSO_CLIENT_ID}
@@ -66,9 +72,3 @@ management:
         enabled: true
     prometheus:
       access: unrestricted
-
-embedded:
-  grpc:
-    host: localhost
-    port: 6565
-    timeout: 3s
