@@ -3,10 +3,6 @@ spring:
     name: eco-knock-be-central
   profiles:
     default: dev
-  jpa:
-    properties.hibernate.format_sql: true
-    defer-datasource-initialization: false
-    hibernate.ddl-auto: validate
   flyway:
     enabled: true
     locations: classpath:db/migration
@@ -42,6 +38,7 @@ security:
     allowed-front-end-origins:
       - http://localhost:*
       - https://localhost:*
+      - https://eco-knock-fe.vercel.app
     allowed-admin-origins:
       - http://localhost:*
       - https://localhost:*
