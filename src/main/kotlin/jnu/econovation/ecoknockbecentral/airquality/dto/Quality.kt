@@ -67,4 +67,12 @@ enum class Quality {
             BAD -> 3
             VERY_BAD -> 4
         }
+
+    fun isWorseThan(quality: Quality): Boolean {
+        return this.severity > quality.severity
+    }
+
+    fun isBetterThan(quality: Quality): Boolean {
+        return this.severity < quality.severity
+    }
 }

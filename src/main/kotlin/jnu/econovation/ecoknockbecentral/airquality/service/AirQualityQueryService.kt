@@ -1,10 +1,10 @@
 package jnu.econovation.ecoknockbecentral.airquality.service
 
 import jnu.econovation.ecoknockbecentral.airquality.dto.AirQualityViewDTO
+import jnu.econovation.ecoknockbecentral.airquality.dto.GetTimeseriesDTO
+import jnu.econovation.ecoknockbecentral.airquality.dto.GetTimeseriesHistoryDTO
 import jnu.econovation.ecoknockbecentral.airquality.dto.request.AirQualityResolution
-import jnu.econovation.ecoknockbecentral.airquality.dto.request.GetTimeseriesHistoryRequest
-import jnu.econovation.ecoknockbecentral.airquality.dto.request.GetTimeseriesRequest
-import jnu.econovation.ecoknockbecentral.airquality.dto.response.AirQualityTimeseriesPointResponse
+import jnu.econovation.ecoknockbecentral.airquality.dto.AirQualityTimeseriesPointDTO
 import jnu.econovation.ecoknockbecentral.airquality.dto.response.GetAirQualityResponse
 import jnu.econovation.ecoknockbecentral.airquality.exception.BadFromToException
 import jnu.econovation.ecoknockbecentral.airquality.readmodel.entity.AirQualityView
@@ -42,34 +42,34 @@ class AirQualityQueryService(
         return GetAirQualityResponse(airQualities = airQualities)
     }
 
-    override fun queryAirQualityTimeseries(request: GetTimeseriesRequest): Slice<AirQualityTimeseriesPointResponse> {
-        val from = request.from
-        val to = request.to
-        val resolution = request.resolution
+    override fun queryAirQualityTimeseries(dto: GetTimeseriesDTO): Slice<AirQualityTimeseriesPointDTO> {
+        val from = dto.from
+        val to = dto.to
+        val resolution = dto.resolution
 
         if (!from.isBefore(to)) {
             throw BadFromToException()
         }
 
         return SliceImpl(
-            findBuckets(resolution, from.toInstant(), to.toInstant())
-                .map(AirQualityTimeseriesPointResponse::from)
+            findBuckets(resolution, from, to)
+                .map(AirQualityTimeseriesPointDTO::from)
         )
     }
 
-    override fun queryAirQualityTimeseriesHistory(request: GetTimeseriesHistoryRequest): Slice<AirQualityTimeseriesPointResponse> {
-        val limit = request.limit
-        val before = request.before
-        val resolution = request.resolution
+    override fun queryAirQualityTimeseriesHistory(dto: GetTimeseriesHistoryDTO): Slice<AirQualityTimeseriesPointDTO> {
+        val limit = dto.limit
+        val before = dto.before
+        val resolution = dto.resolution
 
         val pageable = PageRequest.of(0, limit + 1)
-        val buckets = findPreviousBuckets(resolution, before.toInstant(), pageable)
+        val buckets = findPreviousBuckets(resolution, before, pageable)
         val hasNext = buckets.size > limit
 
         val points = buckets
             .take(limit)
             .asReversed()
-            .map(AirQualityTimeseriesPointResponse::from)
+            .map(AirQualityTimeseriesPointDTO::from)
 
         return SliceImpl(points, PageRequest.of(0, limit), hasNext)
     }
