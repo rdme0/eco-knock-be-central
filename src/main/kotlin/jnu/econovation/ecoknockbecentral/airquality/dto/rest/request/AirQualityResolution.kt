@@ -1,4 +1,4 @@
-package jnu.econovation.ecoknockbecentral.airquality.dto.request
+package jnu.econovation.ecoknockbecentral.airquality.dto.rest.request
 
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonValue

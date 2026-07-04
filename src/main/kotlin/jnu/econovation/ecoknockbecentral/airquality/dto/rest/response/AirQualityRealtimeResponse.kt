@@ -1,7 +1,7 @@
-package jnu.econovation.ecoknockbecentral.airquality.dto.response
+package jnu.econovation.ecoknockbecentral.airquality.dto.rest.response
 
 import jnu.econovation.ecoknockbecentral.airquality.command.SaveAirQualityCommand
-import jnu.econovation.ecoknockbecentral.airquality.dto.Quality
+import jnu.econovation.ecoknockbecentral.airquality.dto.internal.Quality
 import jnu.econovation.ecoknockbecentral.common.extension.toZonedDateTime
 import java.time.ZonedDateTime
 

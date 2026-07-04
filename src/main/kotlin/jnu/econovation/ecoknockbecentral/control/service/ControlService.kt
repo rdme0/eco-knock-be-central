@@ -1,13 +1,13 @@
 package jnu.econovation.ecoknockbecentral.control.service
 
 import jnu.econovation.ecoknockbecentral.airquality.command.AutoControlAirPurifierCommand
-import jnu.econovation.ecoknockbecentral.airquality.dto.AirQualityTimeseriesPointDTO
-import jnu.econovation.ecoknockbecentral.airquality.dto.GetTimeseriesDTO
-import jnu.econovation.ecoknockbecentral.airquality.dto.Power
-import jnu.econovation.ecoknockbecentral.airquality.dto.Power.OFF
-import jnu.econovation.ecoknockbecentral.airquality.dto.Power.ON
-import jnu.econovation.ecoknockbecentral.airquality.dto.Quality.NORMAL
-import jnu.econovation.ecoknockbecentral.airquality.dto.request.AirQualityResolution.ONE_MINUTE
+import jnu.econovation.ecoknockbecentral.airquality.dto.internal.AirQualityTimeseriesPointDTO
+import jnu.econovation.ecoknockbecentral.airquality.dto.internal.GetTimeseriesDTO
+import jnu.econovation.ecoknockbecentral.airquality.dto.grpc.request.Power
+import jnu.econovation.ecoknockbecentral.airquality.dto.grpc.request.Power.OFF
+import jnu.econovation.ecoknockbecentral.airquality.dto.grpc.request.Power.ON
+import jnu.econovation.ecoknockbecentral.airquality.dto.internal.Quality.NORMAL
+import jnu.econovation.ecoknockbecentral.airquality.dto.rest.request.AirQualityResolution.ONE_MINUTE
 import jnu.econovation.ecoknockbecentral.airquality.usecase.QueryAirQualityUseCase
 import jnu.econovation.ecoknockbecentral.control.dto.ControlSettingDTO
 import jnu.econovation.ecoknockbecentral.control.model.entity.ControlActionLog

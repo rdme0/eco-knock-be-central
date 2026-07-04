@@ -1,4 +1,4 @@
-package jnu.econovation.ecoknockbecentral.airquality.dto
+package jnu.econovation.ecoknockbecentral.airquality.dto.internal
 
 enum class Quality {
     VERY_BAD,

@@ -3,9 +3,9 @@ package jnu.econovation.ecoknockbecentral.airquality.messaging.producer
 import jakarta.annotation.PreDestroy
 import jnu.econovation.ecoknockbecentral.airquality.command.AutoControlAirPurifierCommand
 import jnu.econovation.ecoknockbecentral.airquality.command.SaveAirQualityCommand
-import jnu.econovation.ecoknockbecentral.airquality.dto.AirQualityDTO
-import jnu.econovation.ecoknockbecentral.airquality.dto.RawAirPurifierDTO
-import jnu.econovation.ecoknockbecentral.airquality.dto.RawSensorDTO
+import jnu.econovation.ecoknockbecentral.airquality.dto.internal.AirQualityDTO
+import jnu.econovation.ecoknockbecentral.airquality.dto.grpc.RawAirPurifierDTO
+import jnu.econovation.ecoknockbecentral.airquality.dto.grpc.RawSensorDTO
 import jnu.econovation.ecoknockbecentral.airquality.queue.AutoControlAirPurifierQueue
 import jnu.econovation.ecoknockbecentral.airquality.queue.SaveAirQualityQueue
 import jnu.econovation.ecoknockbecentral.grpc.client.airpurifier.AirPurifierGrpcClient

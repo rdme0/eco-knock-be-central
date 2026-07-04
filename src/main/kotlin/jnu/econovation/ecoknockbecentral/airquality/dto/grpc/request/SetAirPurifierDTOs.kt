@@ -1,4 +1,4 @@
-package jnu.econovation.ecoknockbecentral.airquality.dto
+package jnu.econovation.ecoknockbecentral.airquality.dto.grpc.request
 
 import jnu.econovation.ecoknockbecentral.common.exception.client.BadDataSyntaxException
 import java.util.Locale.getDefault

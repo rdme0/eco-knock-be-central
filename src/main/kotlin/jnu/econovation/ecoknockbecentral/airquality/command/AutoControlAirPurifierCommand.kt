@@ -1,6 +1,6 @@
 package jnu.econovation.ecoknockbecentral.airquality.command
 
-import jnu.econovation.ecoknockbecentral.airquality.dto.RawAirPurifierDTO
+import jnu.econovation.ecoknockbecentral.airquality.dto.grpc.RawAirPurifierDTO
 
 data class AutoControlAirPurifierCommand(
     val isOn: Boolean

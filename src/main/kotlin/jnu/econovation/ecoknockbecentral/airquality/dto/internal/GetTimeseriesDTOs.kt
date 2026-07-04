@@ -1,8 +1,8 @@
-package jnu.econovation.ecoknockbecentral.airquality.dto
+package jnu.econovation.ecoknockbecentral.airquality.dto.internal
 
-import jnu.econovation.ecoknockbecentral.airquality.dto.request.AirQualityResolution
-import jnu.econovation.ecoknockbecentral.airquality.dto.request.GetTimeseriesHistoryRequest
-import jnu.econovation.ecoknockbecentral.airquality.dto.request.GetTimeseriesRequest
+import jnu.econovation.ecoknockbecentral.airquality.dto.rest.request.AirQualityResolution
+import jnu.econovation.ecoknockbecentral.airquality.dto.rest.request.GetTimeseriesHistoryRequest
+import jnu.econovation.ecoknockbecentral.airquality.dto.rest.request.GetTimeseriesRequest
 import java.time.Instant
 
 data class GetTimeseriesDTO(

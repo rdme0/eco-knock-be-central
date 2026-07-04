@@ -1,4 +1,4 @@
-package jnu.econovation.ecoknockbecentral.airquality.dto
+package jnu.econovation.ecoknockbecentral.airquality.dto.grpc
 
 import jnu.econovation.ecoknockbecentral.grpc.airpurifier.v1.GetCurrentAirPurifierResponse
 import java.time.Instant

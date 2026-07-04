@@ -1,4 +1,4 @@
-package jnu.econovation.ecoknockbecentral.airquality.dto
+package jnu.econovation.ecoknockbecentral.airquality.dto.internal
 
 import jnu.econovation.ecoknockbecentral.airquality.readmodel.entity.AirQualityView
 import jnu.econovation.ecoknockbecentral.common.extension.toZonedDateTime

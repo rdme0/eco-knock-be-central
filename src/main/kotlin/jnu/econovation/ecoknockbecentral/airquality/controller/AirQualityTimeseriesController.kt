@@ -8,11 +8,11 @@ import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
-import jnu.econovation.ecoknockbecentral.airquality.dto.GetTimeseriesDTO
-import jnu.econovation.ecoknockbecentral.airquality.dto.GetTimeseriesHistoryDTO
-import jnu.econovation.ecoknockbecentral.airquality.dto.request.GetTimeseriesHistoryRequest
-import jnu.econovation.ecoknockbecentral.airquality.dto.request.GetTimeseriesRequest
-import jnu.econovation.ecoknockbecentral.airquality.dto.AirQualityTimeseriesSlice
+import jnu.econovation.ecoknockbecentral.airquality.dto.internal.GetTimeseriesDTO
+import jnu.econovation.ecoknockbecentral.airquality.dto.internal.GetTimeseriesHistoryDTO
+import jnu.econovation.ecoknockbecentral.airquality.dto.rest.request.GetTimeseriesHistoryRequest
+import jnu.econovation.ecoknockbecentral.airquality.dto.rest.request.GetTimeseriesRequest
+import jnu.econovation.ecoknockbecentral.airquality.dto.internal.AirQualityTimeseriesSlice
 import jnu.econovation.ecoknockbecentral.airquality.usecase.QueryAirQualityUseCase
 import jnu.econovation.ecoknockbecentral.common.dto.response.CommonResponse
 import jnu.econovation.ecoknockbecentral.common.dto.response.CommonResponse.success

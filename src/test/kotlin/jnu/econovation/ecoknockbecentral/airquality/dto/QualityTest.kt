@@ -1,5 +1,6 @@
 package jnu.econovation.ecoknockbecentral.airquality.dto
 
+import jnu.econovation.ecoknockbecentral.airquality.dto.internal.Quality
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 

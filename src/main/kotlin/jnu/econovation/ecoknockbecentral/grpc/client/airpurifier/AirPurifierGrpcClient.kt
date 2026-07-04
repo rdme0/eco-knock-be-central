@@ -1,9 +1,9 @@
 package jnu.econovation.ecoknockbecentral.grpc.client.airpurifier
 
-import jnu.econovation.ecoknockbecentral.airquality.dto.FavoriteLevelDTO
-import jnu.econovation.ecoknockbecentral.airquality.dto.Mode
-import jnu.econovation.ecoknockbecentral.airquality.dto.Power
-import jnu.econovation.ecoknockbecentral.airquality.dto.RawAirPurifierDTO
+import jnu.econovation.ecoknockbecentral.airquality.dto.grpc.request.FavoriteLevelDTO
+import jnu.econovation.ecoknockbecentral.airquality.dto.grpc.request.Mode
+import jnu.econovation.ecoknockbecentral.airquality.dto.grpc.request.Power
+import jnu.econovation.ecoknockbecentral.airquality.dto.grpc.RawAirPurifierDTO
 import jnu.econovation.ecoknockbecentral.grpc.airpurifier.v1.AirPurifierServiceGrpc
 import jnu.econovation.ecoknockbecentral.grpc.airpurifier.v1.GetCurrentAirPurifierRequest
 import jnu.econovation.ecoknockbecentral.grpc.airpurifier.v1.SetAirPurifierFavoriteLevelRequest
