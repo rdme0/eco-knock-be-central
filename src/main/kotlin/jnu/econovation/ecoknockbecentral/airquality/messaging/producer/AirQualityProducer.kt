@@ -1,14 +1,23 @@
-package jnu.econovation.ecoknockbecentral.airquality.messaging
+package jnu.econovation.ecoknockbecentral.airquality.messaging.producer
 
 import jakarta.annotation.PreDestroy
+import jnu.econovation.ecoknockbecentral.airquality.command.AutoControlAirPurifierCommand
 import jnu.econovation.ecoknockbecentral.airquality.command.SaveAirQualityCommand
 import jnu.econovation.ecoknockbecentral.airquality.dto.AirQualityDTO
 import jnu.econovation.ecoknockbecentral.airquality.dto.RawAirPurifierDTO
 import jnu.econovation.ecoknockbecentral.airquality.dto.RawSensorDTO
+import jnu.econovation.ecoknockbecentral.airquality.queue.AutoControlAirPurifierQueue
 import jnu.econovation.ecoknockbecentral.airquality.queue.SaveAirQualityQueue
 import jnu.econovation.ecoknockbecentral.grpc.client.airpurifier.AirPurifierGrpcClient
 import jnu.econovation.ecoknockbecentral.grpc.client.sensor.SensorGrpcClient
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.time.delay
 import mu.KotlinLogging
 import org.springframework.boot.context.event.ApplicationReadyEvent
@@ -20,7 +29,8 @@ import java.time.Duration
 class AirQualityProducer(
     private val sensorGrpcClient: SensorGrpcClient,
     private val airPurifierGrpcClient: AirPurifierGrpcClient,
-    private val queue: SaveAirQualityQueue
+    private val saveQueue: SaveAirQualityQueue,
+    private val autoControlQueue: AutoControlAirPurifierQueue,
 ) {
     companion object {
         private val logger = KotlinLogging.logger {}
@@ -83,13 +93,19 @@ class AirQualityProducer(
             }
 
             val airQuality: AirQualityDTO = merge(sensor, airPurifier)
-            val command = SaveAirQualityCommand(
+            val saveCommand = SaveAirQualityCommand(
                 airQuality = airQuality,
                 rawSensor = sensor,
                 rawAirPurifier = airPurifier
             )
 
-            queue.enqueue(command)
+            saveQueue.enqueue(saveCommand)
+
+            val autoControlCommand = AutoControlAirPurifierCommand.from(
+                rawAirPurifier = airPurifier
+            )
+
+            autoControlQueue.enqueue(autoControlCommand)
 
             errorDelay = INITIAL_ERROR_DELAY
 

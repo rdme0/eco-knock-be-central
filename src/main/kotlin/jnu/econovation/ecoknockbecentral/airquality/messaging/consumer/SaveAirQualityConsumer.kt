@@ -1,4 +1,4 @@
-package jnu.econovation.ecoknockbecentral.airquality.messaging
+package jnu.econovation.ecoknockbecentral.airquality.messaging.consumer
 
 import jakarta.annotation.PreDestroy
 import jnu.econovation.ecoknockbecentral.airquality.queue.SaveAirQualityQueue
@@ -11,11 +11,11 @@ import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Service
 
 @Service
-class AirQualityConsumer(
+class SaveAirQualityConsumer(
     private val queue: SaveAirQualityQueue,
     private val saveAirQualityUseCase: SaveAirQualityUseCase,
     private val airQualitySseService: AirQualitySseService,
-) {
+) : Consumer {
     companion object {
         private val logger = KotlinLogging.logger {}
     }
@@ -24,28 +24,28 @@ class AirQualityConsumer(
 
     private val consumerScope = CoroutineScope(
         SupervisorJob() + Dispatchers.IO + CoroutineExceptionHandler { _, throwable ->
-            logger.error(throwable) { "gRPC 센서 consumer Scope에서 예외 포착" }
+            logger.error(throwable) { "save 센서 consumer Scope에서 예외 포착" }
         }
     )
 
     @EventListener(ApplicationReadyEvent::class)
-    fun start() {
+    override fun start() {
         consumingJob = consumerScope.launch { consume() }
     }
 
     @PreDestroy
-    fun cancel() {
+    override fun cancel() {
         logger.info { "consuming job cancel 중" }
         consumingJob?.cancel()
     }
 
-    private suspend fun consume() {
+    override suspend fun consume() {
         queue.asFlow().collect { command ->
             runCatching {
                 saveAirQualityUseCase.save(command)
                 airQualitySseService.publish(command)
-            }.onFailure { throwable ->
-                logger.error(throwable) { "air quality save 실패" }
+            }.onFailure {
+                logger.error(it) { "air quality save 실패" }
             }
         }
     }
