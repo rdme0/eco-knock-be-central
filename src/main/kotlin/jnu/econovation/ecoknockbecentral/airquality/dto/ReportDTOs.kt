@@ -1,5 +1,6 @@
 package jnu.econovation.ecoknockbecentral.airquality.dto
 
+import jnu.econovation.ecoknockbecentral.grpc.airpurifier.v1.GetCurrentAirPurifierResponse
 import java.time.Instant
 
 data class RawAirPurifierDTO(
@@ -20,7 +21,31 @@ data class RawAirPurifierDTO(
     val buzzer: Boolean?,
     val childLock: Boolean,
     val measuredAt: Instant
-)
+) {
+    companion object {
+        fun from(response: GetCurrentAirPurifierResponse): RawAirPurifierDTO {
+            return RawAirPurifierDTO(
+                power = response.power,
+                isOn = response.isOn,
+                aqi = response.aqi,
+                averageAqi = response.averageAqi,
+                humidity = response.humidity,
+                temperatureC = if (response.hasTemperatureC()) response.temperatureC.value else null,
+                mode = response.mode,
+                favoriteLevel = response.favoriteLevel,
+                filterLifeRemaining = response.filterLifeRemaining,
+                filterHoursUsed = response.filterHoursUsed,
+                motorSpeed = response.motorSpeed,
+                purifyVolume = response.purifyVolume,
+                led = response.led,
+                ledBrightness = if (response.hasLedBrightness()) response.ledBrightness.value else null,
+                buzzer = if (response.hasBuzzer()) response.buzzer.value else null,
+                childLock = response.childLock,
+                measuredAt = Instant.ofEpochMilli(response.measuredAtUnixMs),
+            )
+        }
+    }
+}
 
 data class RawSensorDTO(
     val temperatureC: Double,
