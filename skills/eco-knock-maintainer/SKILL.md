@@ -1,326 +1,90 @@
 ---
 name: eco-knock-maintainer
-description: Maintain eco-knock-be-central code in the repository's established style. Use when modifying, reviewing, refactoring, testing, or organizing project code, especially around layered architecture, airquality CQRS boundaries, Spring Boot/Kotlin/Java style, controllers, services, repositories, Flyway migrations, and E2E tests.
+description: Maintain eco-knock-be-central code in the repository's established style. Use when modifying, reviewing, refactoring, testing, or organizing project code, especially Spring Boot Kotlin/Java services, controllers, repositories, entities, DTOs, gRPC clients, Flyway migrations, and E2E tests.
 ---
 
 # Eco Knock Maintainer
 
 Use this skill when working on application code in `eco-knock-be-central`.
 
-## Core Principles
+## Hard Rules
 
-1. Prioritize readability over architectural complexity.
-2. Keep changes close to the current code style before introducing new abstractions.
-3. Prefer layered architecture across the project.
-4. Treat `airquality` as a layered module with light clean-architecture influence:
-   - controllers depend on usecases
-   - usecases are interfaces
-   - services implement usecases
-   - command and query services stay separate
-   - write model and read model stay separate
-5. Treat `overview` as a simple layered module:
-   - controllers call `OverviewService`
-   - services own transaction boundaries
-   - repositories stay behind services
-   - request DTOs validate request-specific rules
-6. Do not introduce heavy architecture ceremony unless it clearly improves readability.
+- Read nearby code and package structure before changing or adding files.
+- If the implementation language is unclear, ask the user whether to use Java or Kotlin before creating files. Some maintainers may know Java but not Kotlin.
+- If the user specifies Java or Kotlin, follow that choice. If nearby files clearly establish a language, match it.
+- Do not put files directly under a domain root package such as `{domain}/SomeClass.kt`. Use role packages.
+- Do not copy `airquality`'s CQRS/usecase/readmodel shape into other domains unless the user explicitly asks.
+- Keep JPA entities in Java under `{domain}/model/entity`.
+- Keep enums/value objects stored by entities in Java under `{domain}/model/vo`.
+- Do not create `policy`, `evaluator`, `manager`, `helper`, or similar indirection unless reuse or complexity clearly justifies it.
+- Keep simple domain decisions inside the owning service as private methods.
+- Do not make production methods `public`, `internal`, companion/static, or otherwise wider only to test private implementation.
+- Do not use `runBlocking` in Spring controllers, services, or schedulers.
+- With blocking gRPC stubs, expose normal functions for normal Spring code. Use `suspend` only for APIs intended to be called from coroutine loops.
+- Preserve user or unrelated worktree changes. Never revert unrelated dirty files.
 
-## Before Editing
+## Package Style
 
-1. Read the nearby code first.
-2. Check package names, DTO shapes, exception style, and test style before deciding.
-3. Preserve user changes in dirty files.
-4. Prefer the smallest edit that makes the behavior clear.
-5. Ask before large package moves, broad rewrites, or architecture changes with multiple valid directions.
+General domains use simple layered packages:
 
-## Architecture Guidance
+- `controller`: HTTP or SSR entry points.
+- `service`: business flow, validation orchestration, and transaction boundaries.
+- `repository`: persistence access.
+- `dto`, `dto/request`, `dto/response`: transfer types.
+- `model/entity`: Java JPA entities.
+- `model/vo`: Java value objects/enums embedded in or stored by entities.
+- `exception`: domain client exceptions.
+- Use `config`, `client`, `resolver`, `messaging`, `queue`, `command`, or `event` only when the domain already needs that role.
 
-Use layered architecture as the default:
+Special cases:
 
-- `controller`: HTTP/SSE entry points
-- `usecase`: application-facing interfaces
-- `service`: usecase implementations and transaction boundaries
-- `repository`: persistence access
-- `model/entity`: write model
-- `readmodel/entity`: read model backed by views/materialized views
-- `dto/request`: inbound request DTOs
-- `dto/response`: outbound response DTOs
-- `exception`: domain-specific client exceptions
+- `airquality` already has CQRS-like boundaries. Keep its command/query/usecase/readmodel split.
+- `common` contains shared infrastructure only: security, exceptions, response wrappers, converters, utilities, OpenAPI support.
+- External integrations such as `sso`, `whozin`, and `grpc` keep integration details under `client`/`config`/`dto`/`service`.
 
-For `airquality`:
+## Language Rules
 
-- Keep command writes through `AirQualityCommandService` and `AirQualityRepository`.
-- Keep query reads through `AirQualityQueryService` and read-model repositories.
-- Do not make query code aggregate from raw `air_quality` when a read model exists.
-- Keep materialized-view refresh logic outside request handlers.
-- Treat SSE publish as a post-save notification, not the write model itself.
+- Use Java for JPA entities, entity value objects, entity enums, security filters/helpers, low-level security DTOs/constants, and existing Java infrastructure.
+- Use Kotlin for services, controllers, repository interfaces, configuration properties, request/response DTOs, external clients, messaging loops, and simple application DTOs when nearby code is Kotlin.
+- For mixed Java/Kotlin features, ask the user where they want the boundary if nearby code does not make it obvious.
+- Keep Kotlin constructor-injected and concise. Put `companion object` near the top, but limit it to logger, constants, and real factories.
 
-Typical flow:
+## Implementation Style
 
-```text
-HTTP request
--> controller
--> usecase interface
--> service implementation
--> repository
--> entity/readmodel
-```
+- Keep controllers thin: bind input, delegate to service, return `CommonResponse` or a view.
+- Keep repositories behind services. Controllers should not call repositories directly.
+- Put `@Transactional` on services, not controllers.
+- Prefer direct, explicit branches over clever maps or generic helpers.
+- Avoid silent correction of invalid input. Throw the owning domain exception.
+- Keep request-specific validation in request DTOs.
+- Prefer `TargetType.from(source)` factories for DTO conversion.
+- Avoid `request.toOtherRequest()` and broad converter classes for one-off mapping.
+- For `@ConfigurationProperties`, use public constructor `val` properties and no default values for required operational settings.
+- For redirect, auth, token, or cookie behavior, keep logic in service/resolver/helper classes rather than controllers.
+- When adding a scheduled or background flow, make repeated execution idempotent and avoid overlapping or noisy side effects.
 
-Command flow:
+## Persistence And Migrations
 
-```text
-AirQualityConsumer
--> SaveAirQualityUseCase
--> AirQualityCommandService
--> AirQualityRepository
--> AirQuality
-```
+- Hibernate uses `ddl-auto=validate`; every new table/column/entity needs a Flyway migration.
+- Add new migrations as the next `V{n}__short_description.sql`. Do not edit applied migrations.
+- Match existing physical naming: snake_case table/column names such as `member_id`, `sort_order`, `measured_at`.
+- Add indexes for query patterns introduced by the feature.
+- Prefer explicit foreign keys when a table owns a real relationship.
 
-Query flow:
+## Testing
 
-```text
-AirQualityTimeseriesController
--> QueryAirQualityUseCase
--> AirQualityQueryService
--> AirQuality*ViewRepository
--> AirQuality*View
--> AirQualityTimeseriesPointResponse
-```
+- Run the narrowest relevant Gradle task first.
+- Do not change production visibility just to unit-test private logic.
+- Prefer testing public behavior, repository queries, service outcomes, controller responses, or Flyway/JPA validation.
+- E2E tests should follow the existing style: `@SpringBootTest(webEnvironment = RANDOM_PORT)`, constructor injection, `RestClient`, and bounded test data cleanup.
+- Do not mock E2E collaborators unless the user explicitly asks.
+- Do not add test-only default values for required secrets such as `ADMIN_MASTER_PASSWORD`, `JWT_SECRET_KEY`, `AES256_KEY`, `SSO_CLIENT_ID`, or `WHOZIN_TOKEN`.
 
-Avoid:
+## Domain Notes
 
-- controller calling repository directly
-- query service using `AirQualityRepository` to aggregate raw rows when a read model exists
-- command service depending on read-model repositories
-- request handlers refreshing materialized views
-- adding a generic helper when an explicit branch is easier to read
-
-For `overview`:
-
-- Keep user shortcut rows independent from default shortcut rows after copying.
-- Use `default_overview_shortcut` only as the reset/init source.
-- Treat default overview shortcuts and user overview shortcuts as separate domains. Do not reuse user shortcut request DTOs for default shortcut admin writes.
-- Default overview shortcut replacement should accept a default-specific request type directly; avoid converting it into `UpdateOverviewShortcutRequest` or `UpdateShortcutDTO`.
-- Validate full shortcut replacement requests in `UpdateOverviewShortcutRequest`.
-- Require `sortOrder` to contain exactly `0..n-1` without duplicates.
-- Query user shortcuts ordered by `sortOrder`.
-- Keep URL validation in the `ValidHttpUrl` value object and DTO binding path.
-- For JSON admin shortcut requests, bind URL fields as `ValidHttpUrl` directly so Jackson uses its `@JsonCreator(DELEGATING)` validation instead of manually accepting `String` and converting later.
-
-For `auth` and `sso`:
-
-- Keep first-party token issuing, refresh, token DTOs, auth policy config, and auth client exceptions under `auth`.
-- Keep auth-econovation integration details under `sso`: SSO `/me` client, WEB callback handling, redirect URL resolving, and SSO-specific client exceptions.
-- Treat auth-econovation `role` as separate from this service's `Member.role`; do not promote internal roles from the SSO role unless the user explicitly changes that policy.
-- For admin authorization, use this service's project role such as `Member.role = ADMIN`; never treat the SSO role as admin authority unless the user explicitly changes that policy.
-- Store only refresh token `jti` values in Redis, keyed by `auth:refresh:{memberId}`. Do not store raw refresh token strings.
-- Keep refresh token comparison and replacement atomic. Use the Lua script resource under `src/main/resources/redis` for compare-and-replace behavior instead of splitting Redis `GET` and `SET` in service code.
-- Prefer repository method names that describe the Redis operation directly, such as `replaceIfMatches`, and translate Lua return codes into a small enum before they reach services.
-- Keep Spring Security infrastructure under `common.security`: filters, handlers, user details, policy resolver, and JWT helper/util wiring.
-- Do not replace `JwtAuthHelper`'s existing filter-level `UnauthorizedException` flow with auth domain `ClientException`; auth domain `ClientException` is for controller/service API failures such as refresh token reissue.
-- For redirect parameters that eventually feed `sendRedirect`, validate against the frontend allowlist both when accepting the query parameter and before final redirect from a stored cookie.
-
-For `whozin`:
-
-- Keep Whozin external API integration under `whozin`: HTTP client, config, external response DTOs, internal DTO conversion, and service facade.
-- Treat the actual Whozin response as the source of truth over Swagger examples when they differ.
-- Preserve snake_case response mapping with Jackson naming annotations and keep `generated_at` timezone handling aligned with the real response shape.
-- Parse Korean `presence_duration` strings explicitly, and fail loudly with `InternalServerException` when the upstream response shape is unexpected.
-- Tests that call the real Whozin API must make the external dependency obvious and require `WHOZIN_TOKEN`; do not silently replace them with mocks unless the user asks.
-
-For deployment config:
-
-- Keep shared Spring settings in `application.yaml` and environment-specific DB/Redis settings in `application-dev.yaml` or `application-prod.yaml`.
-- Keep local dev compose under `deploy/dev` and production compose/scripts under `deploy/prod`.
-- Production compose should run the Spring app with `SPRING_PROFILES_ACTIVE=prod` and use compose service names for internal Postgres/Redis hosts.
-- Keep compose wrapper scripts thin: they should delegate to `docker compose` with the repository root `.env` and avoid duplicating compose configuration.
-
-## Code Style
-
-Match the existing style unless there is a clear reason not to.
-
-- Keep controllers thin: receive the request, delegate to DTO/service collaborators, and return a view name or response. Do not put token creation, cookie mechanics, password comparison, redirect URL construction, or manual form parsing in controllers.
-- Avoid parallel request parameters for structured inputs. If several fields form one logical request, bind a request DTO.
-- For `@ConfigurationProperties`, follow existing config style such as `AuthPolicyConfig`: public constructor `val` properties, no private backing fields, no custom getters, and no default values for required operational settings.
-- Name TTL properties after the thing that expires. For JWT expiry use `token-ttl`, not `session-ttl`.
-- Put Kotlin `companion object` near the top of the class body.
-- Keep Kotlin classes concise and constructor-injected.
-- Prefer explicit domain names over generic names.
-- Prefer simple `when` branches over clever maps when the explicit form is easier to read.
-- Avoid silent request correction. Invalid client input should throw a domain exception.
-- Prefer domain exceptions under the owning package over generic `IllegalArgumentException`.
-- Keep validation close to request DTOs when the rule is request-specific.
-- Keep transaction annotations on services, not controllers.
-- Use KotlinLogging for Kotlin code and Lombok `@Slf4j` for Java code; do not introduce raw `LoggerFactory` in Kotlin classes unless there is a specific reason.
-- Keep comments rare; delete stale TODOs instead of preserving outdated notes.
-- Use Java static factories or small Kotlin extension functions when Java Lombok builders make Kotlin call sites noisy; avoid adding broad converter classes for one-off simple transformations.
-
-Kotlin class shape:
-
-```kotlin
-@Service
-@Transactional(readOnly = true)
-class SomeQueryService(
-    private val repository: SomeRepository,
-) : SomeUseCase {
-    companion object {
-        private const val DEFAULT_LIMIT = 100
-    }
-
-    override fun query(request: SomeRequest): SomeResponse {
-        // keep the flow direct and readable
-    }
-}
-```
-
-Request validation shape:
-
-```kotlin
-data class SomeRequest(
-    val limit: Int,
-) {
-    init {
-        if (limit !in MIN_LIMIT..MAX_LIMIT) {
-            throw SomeDomainException()
-        }
-    }
-
-    companion object {
-        const val MIN_LIMIT = 1
-        const val MAX_LIMIT = 500
-    }
-}
-```
-
-Exception shape:
-
-```kotlin
-class BadSomethingException : ClientException(ErrorCode.BAD_SOMETHING)
-```
-
-Avoid silently fixing invalid requests:
-
-```kotlin
-// Avoid
-val limit = request.limit.coerceIn(1, 500)
-
-// Prefer
-if (limit !in 1..500) throw BadLimitException()
-```
-
-## API And DTO Guidance
-
-- Return simple response shapes that frontend code can consume directly.
-- Wrap controller JSON responses in `CommonResponse.success(...)`, `CommonResponse.emptySuccess()`, or `CommonResponse.failure(...)` unless an endpoint intentionally streams raw data.
-- DTO names must communicate direction and purpose: inbound client or outbound external-server requests end with `Request`, responses end with `Response`, and internal transfer shapes end with `DTO`.
-- Avoid vague DTO names such as `Row` or `Form` when a request/response/DTO suffix applies.
-- Prefer flat request/DTO shapes for one row or one logical item. Use a separate wrapper request only when the endpoint truly accepts a collection or whole-list replacement.
-- Avoid `request.toOtherRequest()` conversion methods. If conversion is actually needed, prefer `companion object { fun from(...) }` on the target type; if domains differ, prefer no cross-domain request conversion at all.
-- For POST endpoints that behave like JSON APIs, use `@RequestBody` instead of query parameters or form-style request parameters.
-- Use Spring Data `Slice` directly when the controller naturally returns a slice.
-- For cursor-style history reads, `last == false` means more historical data exists.
-- Use `OffsetDateTime` at API boundaries when clients send timezone-aware timestamps.
-- Convert to `Instant` inside service/repository code.
-- For enum request values with custom codes, support Jackson body binding with `@JsonCreator` and `@JsonValue`.
-- For timeseries `GET` handlers, bind request DTOs from query parameters with `@ModelAttribute` or no annotation; do not use JSON bodies unless explicitly requested.
-- SSE endpoints return `SseEmitter` directly. Event payloads may still use `CommonResponse.success(...)` when sending application data.
-
-Enum code shape:
-
-```kotlin
-enum class SomeResolution(
-    @get:JsonValue
-    val code: String,
-) {
-    FIVE_MINUTES("5m");
-
-    companion object {
-        @JvmStatic
-        @JsonCreator
-        fun fromOrThrowBusinessException(code: String): SomeResolution {
-            return entries.find { it.code == code } ?: throw BadResolutionException()
-        }
-    }
-}
-```
-
-Value object URL binding shape:
-
-```java
-@Embeddable
-public record ValidHttpUrl(String value) {
-    @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
-    public ValidHttpUrl {
-        // validate syntax and allowed scheme
-    }
-
-    @JsonValue
-    @Override
-    public String value() {
-        return value;
-    }
-}
-```
-
-## SSR Admin UI Guidance
-
-- Keep Thymeleaf templates focused on HTML structure and `th:*` binding. Move sizable CSS and JavaScript into Spring Boot static resources under `src/main/resources/static`.
-- For simple SSR admin pages, prefer native browser APIs such as `fetch` over adding frontend dependencies such as Axios unless there is a concrete need.
-- SSR pages may still submit save actions as JSON APIs when that keeps controller binding and validation cleaner.
-- When adding static resources under protected admin paths, explicitly permit/skip those CSS and JS paths in both Spring Security authorization and the auth policy resolver.
-
-## Persistence And Migration Guidance
-
-- This project uses Flyway with `spring.jpa.hibernate.ddl-auto=validate`; every new entity/table/column needs a matching migration.
-- Keep migration filenames monotonic: `V{next}__short_description.sql`.
-- Do not edit already-applied Flyway migrations such as `V1__init_schema.sql`; add the next versioned migration instead.
-- Match Hibernate's current physical naming style in SQL: `overview_shortcut`, `member_id`, `sort_order`.
-- Add indexes for query patterns that are part of the service contract, such as `(member_id, sort_order)` for ordered overview shortcut reads.
-- Prefer explicit foreign keys for entity relationships.
-
-## Testing Guidance
-
-- Follow the project's existing E2E style:
-  - `@SpringBootTest(webEnvironment = RANDOM_PORT)`
-  - constructor injection
-  - `RestClient` for real HTTP calls
-  - no mocks unless the user explicitly allows them
-- Prefer `@ActiveProfiles("dev")` when tests should run with the development profile; do not paste long `@SpringBootTest(properties = [...])` blocks with secrets/config into each test class.
-- Do not create `src/test/resources/application-dev.yaml` just to duplicate `src/main/resources/application-dev.yaml`. Tests should use the same dev profile file unless there is a genuinely test-only setting.
-- Required operational environment variables remain required in tests. Do not add `${ENV_VAR:default}` test fallbacks for required secrets such as `ADMIN_MASTER_PASSWORD`, `JWT_SECRET_KEY`, `AES256_KEY`, `SSO_CLIENT_ID`, or `WHOZIN_TOKEN` just to make tests run without environment setup.
-- Prefer testing real controller/service/repository/Flyway behavior when the request says E2E.
-- If tests use the development DB, isolate data by a clearly bounded test timestamp range and clean it up.
-- Verify invalid request cases return the expected domain error code.
-- Run the narrowest relevant Gradle task first, then broader verification when feasible.
-
-E2E test shape:
-
-```kotlin
-@SpringBootTest(
-    classes = [EcoKnockBeCentralApplication::class],
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
-)
-@TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
-class SomeControllerE2ETest(
-    @param:LocalServerPort
-    private val port: Int,
-    private val jdbcTemplate: JdbcTemplate,
-    private val mapper: ObjectMapper,
-) {
-    private val restClient = RestClient.builder()
-        .baseUrl("http://localhost:$port")
-        .build()
-}
-```
-
-Avoid:
-
-- replacing E2E collaborators with mocks without explicit user approval
-- deleting broad development data in tests
-- asserting undocumented JSON fields when Spring Data serialization already provides a stable field such as `content` or `last`
-
-## Boundaries With Other Skills
-
-- Use `readme-maintainer` for README updates.
-- Use `git-commit-korean` for commit creation or Korean commit message work.
-- This skill is for code maintenance, architecture consistency, style, and tests.
+- `overview`: default shortcuts and user shortcuts are separate domains. Use default rows only as reset/init source.
+- `auth`: store refresh token `jti` values, not raw refresh tokens. Keep refresh token replacement atomic.
+- `sso`: auth-econovation role is not this service's admin role. Validate redirect URLs against the allowlist.
+- `whozin`: treat the real API response as source of truth. Preserve snake_case response mapping.
+- `light`: persistence is simple save/query around `LightReport`; avoid adding architecture ceremony.
+- `grpc`: clients wrap generated stubs and map responses into project DTOs close to the client boundary.

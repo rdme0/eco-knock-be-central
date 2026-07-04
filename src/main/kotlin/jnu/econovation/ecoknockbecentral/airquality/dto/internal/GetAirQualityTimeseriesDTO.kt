@@ -1,14 +1,13 @@
-package jnu.econovation.ecoknockbecentral.airquality.dto.response
+package jnu.econovation.ecoknockbecentral.airquality.dto.internal
 
-import jnu.econovation.ecoknockbecentral.airquality.dto.Quality
 import jnu.econovation.ecoknockbecentral.airquality.readmodel.entity.AirQualityView
 import jnu.econovation.ecoknockbecentral.common.extension.toZonedDateTime
 import org.springframework.data.domain.Slice
 import java.time.ZonedDateTime
 
-typealias AirQualityTimeseriesSlice = Slice<AirQualityTimeseriesPointResponse>
+typealias AirQualityTimeseriesSlice = Slice<AirQualityTimeseriesPointDTO>
 
-data class AirQualityTimeseriesPointResponse(
+data class AirQualityTimeseriesPointDTO(
     val time: ZonedDateTime,
     val end: ZonedDateTime,
     val pm25Quality: Quality,
@@ -18,8 +17,8 @@ data class AirQualityTimeseriesPointResponse(
     val sampleCount: Long,
 ) {
     companion object {
-        fun from(entity: AirQualityView): AirQualityTimeseriesPointResponse {
-            return AirQualityTimeseriesPointResponse(
+        fun from(entity: AirQualityView): AirQualityTimeseriesPointDTO {
+            return AirQualityTimeseriesPointDTO(
                 time = entity.bucketStart.toZonedDateTime(),
                 end = entity.bucketEnd.toZonedDateTime(),
                 pm25Quality = Quality.fromPm25(entity.avgPm25),

@@ -8,9 +8,11 @@ import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
-import jnu.econovation.ecoknockbecentral.airquality.dto.request.GetTimeseriesHistoryRequest
-import jnu.econovation.ecoknockbecentral.airquality.dto.request.GetTimeseriesRequest
-import jnu.econovation.ecoknockbecentral.airquality.dto.response.AirQualityTimeseriesSlice
+import jnu.econovation.ecoknockbecentral.airquality.dto.internal.GetTimeseriesDTO
+import jnu.econovation.ecoknockbecentral.airquality.dto.internal.GetTimeseriesHistoryDTO
+import jnu.econovation.ecoknockbecentral.airquality.dto.rest.request.GetTimeseriesHistoryRequest
+import jnu.econovation.ecoknockbecentral.airquality.dto.rest.request.GetTimeseriesRequest
+import jnu.econovation.ecoknockbecentral.airquality.dto.internal.AirQualityTimeseriesSlice
 import jnu.econovation.ecoknockbecentral.airquality.usecase.QueryAirQualityUseCase
 import jnu.econovation.ecoknockbecentral.common.dto.response.CommonResponse
 import jnu.econovation.ecoknockbecentral.common.dto.response.CommonResponse.success
@@ -41,7 +43,10 @@ class AirQualityTimeseriesController(
                 `in` = ParameterIn.QUERY,
                 required = true,
                 description = "집계 해상도",
-                schema = Schema(type = "string", allowableValues = ["1m", "5m", "15m", "1h", "4h", "1d"]),
+                schema = Schema(
+                    type = "string",
+                    allowableValues = ["1m", "5m", "15m", "1h", "4h", "1d"]
+                ),
                 example = "5m",
             ),
             Parameter(
@@ -80,7 +85,8 @@ class AirQualityTimeseriesController(
         @Parameter(hidden = true)
         request: GetTimeseriesRequest
     ): ResponseEntity<CommonResponse<AirQualityTimeseriesSlice>> {
-        return ok(success(queryAirQualityUseCase.queryAirQualityTimeseries(request)))
+        val dto = GetTimeseriesDTO.from(request)
+        return ok(success(queryAirQualityUseCase.queryAirQualityTimeseries(dto)))
     }
 
     @GetMapping("/history", produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -93,7 +99,10 @@ class AirQualityTimeseriesController(
                 `in` = ParameterIn.QUERY,
                 required = true,
                 description = "집계 해상도",
-                schema = Schema(type = "string", allowableValues = ["1m", "5m", "15m", "1h", "4h", "1d"]),
+                schema = Schema(
+                    type = "string",
+                    allowableValues = ["1m", "5m", "15m", "1h", "4h", "1d"]
+                ),
                 example = "5m",
             ),
             Parameter(
@@ -140,6 +149,7 @@ class AirQualityTimeseriesController(
         @Parameter(hidden = true)
         request: GetTimeseriesHistoryRequest
     ): ResponseEntity<CommonResponse<AirQualityTimeseriesSlice>> {
-        return ok(success(queryAirQualityUseCase.queryAirQualityTimeseriesHistory(request)))
+        val dto = GetTimeseriesHistoryDTO.from(request)
+        return ok(success(queryAirQualityUseCase.queryAirQualityTimeseriesHistory(dto)))
     }
 }

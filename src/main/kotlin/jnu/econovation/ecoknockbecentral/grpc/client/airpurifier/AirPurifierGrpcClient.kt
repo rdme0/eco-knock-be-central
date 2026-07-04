@@ -1,11 +1,16 @@
 package jnu.econovation.ecoknockbecentral.grpc.client.airpurifier
 
-import jnu.econovation.ecoknockbecentral.airquality.dto.RawAirPurifierDTO
+import jnu.econovation.ecoknockbecentral.airquality.dto.grpc.request.FavoriteLevelDTO
+import jnu.econovation.ecoknockbecentral.airquality.dto.grpc.request.Mode
+import jnu.econovation.ecoknockbecentral.airquality.dto.grpc.request.Power
+import jnu.econovation.ecoknockbecentral.airquality.dto.grpc.RawAirPurifierDTO
 import jnu.econovation.ecoknockbecentral.grpc.airpurifier.v1.AirPurifierServiceGrpc
 import jnu.econovation.ecoknockbecentral.grpc.airpurifier.v1.GetCurrentAirPurifierRequest
+import jnu.econovation.ecoknockbecentral.grpc.airpurifier.v1.SetAirPurifierFavoriteLevelRequest
+import jnu.econovation.ecoknockbecentral.grpc.airpurifier.v1.SetAirPurifierModeRequest
+import jnu.econovation.ecoknockbecentral.grpc.airpurifier.v1.SetAirPurifierPowerRequest
 import jnu.econovation.ecoknockbecentral.grpc.config.EmbeddedGrpcConfig
 import org.springframework.stereotype.Component
-import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 @Component
@@ -13,29 +18,47 @@ class AirPurifierGrpcClient(
     private val config: EmbeddedGrpcConfig,
     private val stub: AirPurifierServiceGrpc.AirPurifierServiceBlockingStub,
 ) {
-    suspend fun getCurrentAirPurifier(): RawAirPurifierDTO {
+    fun getCurrentAirPurifier(): RawAirPurifierDTO {
         val response = stub
             .withDeadlineAfter(config.timeout.toMillis(), TimeUnit.MILLISECONDS)
             .getCurrentAirPurifier(GetCurrentAirPurifierRequest.getDefaultInstance())
 
-        return RawAirPurifierDTO(
-            power = response.power,
-            isOn = response.isOn,
-            aqi = response.aqi,
-            averageAqi = response.averageAqi,
-            humidity = response.humidity,
-            temperatureC = if (response.hasTemperatureC()) response.temperatureC.value else null,
-            mode = response.mode,
-            favoriteLevel = response.favoriteLevel,
-            filterLifeRemaining = response.filterLifeRemaining,
-            filterHoursUsed = response.filterHoursUsed,
-            motorSpeed = response.motorSpeed,
-            purifyVolume = response.purifyVolume,
-            led = response.led,
-            ledBrightness = if (response.hasLedBrightness()) response.ledBrightness.value else null,
-            buzzer = if (response.hasBuzzer()) response.buzzer.value else null,
-            childLock = response.childLock,
-            measuredAt = Instant.ofEpochMilli(response.measuredAtUnixMs),
-        )
+        return RawAirPurifierDTO.from(response)
+    }
+
+    fun setAirPurifierPower(power: Power): RawAirPurifierDTO {
+        val request = SetAirPurifierPowerRequest.newBuilder()
+            .setOn(power.toBoolean())
+            .build()
+
+        val response = stub
+            .withDeadlineAfter(config.timeout.toMillis(), TimeUnit.MILLISECONDS)
+            .setAirPurifierPower(request)
+
+        return RawAirPurifierDTO.from(response.current)
+    }
+
+    fun setAirPurifierMode(mode: Mode): RawAirPurifierDTO {
+        val request = SetAirPurifierModeRequest.newBuilder()
+            .setMode(mode.toString())
+            .build()
+
+        val response = stub
+            .withDeadlineAfter(config.timeout.toMillis(), TimeUnit.MILLISECONDS)
+            .setAirPurifierMode(request)
+
+        return RawAirPurifierDTO.from(response.current)
+    }
+
+    fun setAirPurifierFavoriteLevel(level: FavoriteLevelDTO): RawAirPurifierDTO {
+        val request = SetAirPurifierFavoriteLevelRequest.newBuilder()
+            .setLevel(level.value)
+            .build()
+
+        val response = stub
+            .withDeadlineAfter(config.timeout.toMillis(), TimeUnit.MILLISECONDS)
+            .setAirPurifierFavoriteLevel(request)
+
+        return RawAirPurifierDTO.from(response.current)
     }
 }

@@ -1,8 +1,8 @@
 package jnu.econovation.ecoknockbecentral.airquality.model.entity;
 
 import jakarta.persistence.*;
-import jnu.econovation.ecoknockbecentral.airquality.dto.RawAirPurifierDTO;
-import jnu.econovation.ecoknockbecentral.airquality.dto.RawSensorDTO;
+import jnu.econovation.ecoknockbecentral.airquality.dto.grpc.RawAirPurifierDTO;
+import jnu.econovation.ecoknockbecentral.airquality.dto.grpc.RawSensorDTO;
 import jnu.econovation.ecoknockbecentral.common.model.entity.BaseEntity;
 import lombok.AccessLevel;
 import lombok.Builder;

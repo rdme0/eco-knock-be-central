@@ -1,6 +1,6 @@
 package jnu.econovation.ecoknockbecentral.grpc.client.sensor
 
-import jnu.econovation.ecoknockbecentral.airquality.dto.RawSensorDTO
+import jnu.econovation.ecoknockbecentral.airquality.dto.grpc.RawSensorDTO
 import jnu.econovation.ecoknockbecentral.grpc.config.EmbeddedGrpcConfig
 import jnu.econovation.ecoknockbecentral.grpc.sensor.v2.GetCurrentSensorRequest
 import jnu.econovation.ecoknockbecentral.grpc.sensor.v2.SensorServiceGrpc

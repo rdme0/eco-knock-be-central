@@ -1,7 +1,7 @@
 package jnu.econovation.ecoknockbecentral.common.exception.constants;
 
-import jnu.econovation.ecoknockbecentral.airquality.dto.request.AirQualityResolution;
-import jnu.econovation.ecoknockbecentral.airquality.dto.request.GetTimeseriesHistoryRequest;
+import jnu.econovation.ecoknockbecentral.airquality.dto.rest.request.AirQualityResolution;
+import jnu.econovation.ecoknockbecentral.airquality.dto.rest.request.GetTimeseriesHistoryRequest;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

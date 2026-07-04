@@ -20,8 +20,8 @@ interface AirQualityViewRepository<T : AirQualityView> : JpaRepository<T, Instan
         """
     )
     fun findBuckets(
-        @Param("from") from: Instant,
-        @Param("to") to: Instant,
+        from: Instant,
+        to: Instant,
     ): List<T>
 
     @Query(
@@ -33,7 +33,7 @@ interface AirQualityViewRepository<T : AirQualityView> : JpaRepository<T, Instan
         """
     )
     fun findPreviousBuckets(
-        @Param("before") before: Instant,
+        before: Instant,
         pageable: Pageable,
     ): List<T>
 }

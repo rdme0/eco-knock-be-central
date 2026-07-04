@@ -1,19 +1,20 @@
-@import url("https://fonts.googleapis.com/css2?family=Do+Hyeon&display=swap");
-
 :root {
     color-scheme: light;
-    --bg: #eef2f6;
-    --surface: #ffffff;
-    --surface-soft: #f8fafc;
-    --line: #d9dee7;
-    --text: #1e293b;
-    --muted: #64748b;
-    --primary: #255cbd;
-    --primary-hover: #1e4f9f;
-    --danger: #b42318;
-    --success: #067647;
+    --bg: #f5f5f7;
+    --surface: rgba(255, 255, 255, 0.92);
+    --surface-strong: #ffffff;
+    --surface-soft: #f2f2f7;
+    --line: rgba(60, 60, 67, 0.16);
+    --line-soft: rgba(60, 60, 67, 0.09);
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --muted-soft: #8e8e93;
+    --primary: #007aff;
+    --primary-hover: #0067d8;
+    --danger: #d70015;
+    --success: #248a3d;
     --shadow: 0 18px 48px rgba(30, 41, 59, 0.14);
-    --soft-shadow: 0 6px 18px rgba(37, 92, 189, 0.14);
+    --soft-shadow: 0 18px 48px rgba(0, 0, 0, 0.08);
 }
 
 * {
@@ -22,16 +23,18 @@
 
 body {
     margin: 0;
-    background: var(--bg);
+    background:
+        radial-gradient(circle at top left, rgba(0, 122, 255, 0.10), transparent 30%),
+        var(--bg);
     color: var(--text);
-    font-family: "Do Hyeon", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", sans-serif;
     letter-spacing: 0;
 }
 
 main {
     width: min(1440px, calc(100vw - 32px));
     margin: 0 auto;
-    padding: 32px 0;
+    padding: 44px 0 28px;
 }
 
 .admin-header {
@@ -50,27 +53,32 @@ h2 {
 
 h1 {
     color: var(--primary);
-    font-size: 30px;
-    font-weight: 800;
+    font-size: clamp(34px, 5vw, 48px);
+    font-weight: 750;
+    line-height: 1.05;
 }
 
 h2 {
     font-size: 18px;
+    font-weight: 700;
 }
 
 .count,
 .panel-meta {
     color: var(--muted);
-    font-size: 14px;
+    font-size: 13px;
+    font-weight: 650;
 }
 
 .notice {
     margin-bottom: 14px;
     padding: 12px 14px;
-    border: 1px solid var(--line);
-    border-radius: 6px;
+    border: 1px solid var(--line-soft);
+    border-radius: 14px;
     background: var(--surface);
     font-size: 14px;
+    box-shadow: var(--soft-shadow);
+    backdrop-filter: blur(18px);
 }
 
 .notice.success {
@@ -91,10 +99,11 @@ h2 {
 .editor-panel,
 .preview-panel {
     min-width: 0;
-    border: 1px solid var(--line);
-    border-radius: 8px;
+    border: 1px solid var(--line-soft);
+    border-radius: 18px;
     background: var(--surface);
     box-shadow: var(--soft-shadow);
+    backdrop-filter: blur(18px);
 }
 
 .editor-panel {
@@ -112,8 +121,8 @@ h2 {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 16px 18px;
-    border-bottom: 1px solid var(--line);
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid var(--line-soft);
 }
 
 form {
@@ -144,16 +153,16 @@ table {
 th,
 td {
     padding: 12px;
-    border-bottom: 1px solid var(--line);
+    border-bottom: 1px solid var(--line-soft);
     text-align: left;
     vertical-align: middle;
 }
 
 th {
     color: var(--muted);
-    background: #eef2f6;
+    background: rgba(242, 242, 247, 0.72);
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 650;
 }
 
 td.order {
@@ -172,17 +181,19 @@ td.actions {
 input {
     width: 100%;
     min-width: 0;
-    padding: 9px 10px;
+    height: 40px;
+    padding: 0 11px;
     border: 1px solid var(--line);
-    border-radius: 6px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.86);
     color: var(--text);
     font: inherit;
 }
 
 input:focus {
-    outline: 2px solid rgba(37, 92, 189, 0.22);
-    outline-offset: 1px;
-    border-color: var(--primary);
+    outline: 0;
+    border-color: rgba(0, 122, 255, 0.50);
+    box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.14);
 }
 
 input[readonly] {
@@ -195,7 +206,7 @@ input[readonly] {
     justify-content: space-between;
     gap: 12px;
     padding: 14px;
-    background: var(--surface-soft);
+    background: rgba(242, 242, 247, 0.72);
 }
 
 .group {
@@ -208,17 +219,25 @@ button,
     min-height: 38px;
     padding: 8px 12px;
     border: 1px solid var(--line);
-    border-radius: 6px;
-    background: #ffffff;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.72);
     color: var(--text);
     font: inherit;
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: 650;
     cursor: pointer;
+    transition: border-color 140ms ease, background 140ms ease, color 140ms ease, transform 140ms ease;
 }
 
 button:hover,
 .button:hover {
-    border-color: #b8c3d3;
+    border-color: rgba(0, 122, 255, 0.28);
+    background: var(--surface-strong);
+}
+
+button:active,
+.button:active {
+    transform: scale(0.98);
 }
 
 button.primary {
@@ -236,6 +255,8 @@ button.danger {
 }
 
 .phone-preview {
+    --primary: #255cbd;
+
     display: flex;
     justify-content: center;
     padding: 20px 16px 0;

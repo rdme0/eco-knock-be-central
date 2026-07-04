@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets
 @SpringBootTest(
     classes = [EcoKnockBeCentralApplication::class],
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    properties = ["security.admin.master-password=test-master-password"],
 )
 @ActiveProfiles("dev")
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
