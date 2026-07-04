@@ -1,8 +1,8 @@
 package jnu.econovation.ecoknockbecentral.airquality.command
 
-import jnu.econovation.ecoknockbecentral.airquality.dto.AirQualityDTO
-import jnu.econovation.ecoknockbecentral.airquality.dto.RawAirPurifierDTO
-import jnu.econovation.ecoknockbecentral.airquality.dto.RawSensorDTO
+import jnu.econovation.ecoknockbecentral.airquality.dto.internal.AirQualityDTO
+import jnu.econovation.ecoknockbecentral.airquality.dto.grpc.RawAirPurifierDTO
+import jnu.econovation.ecoknockbecentral.airquality.dto.grpc.RawSensorDTO
 
 data class SaveAirQualityCommand(
     val airQuality: AirQualityDTO,

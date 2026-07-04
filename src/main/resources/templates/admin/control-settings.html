@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>자동제어 설정</title>
+    <link rel="stylesheet" href="../../static/admin/control-settings.css" th:href="@{/admin/control-settings.css}">
+</head>
+<body>
+<main class="settings-page">
+    <header class="page-header">
+        <div>
+            <p class="eyebrow">ECO-KNOCK ADMIN</p>
+            <h1>자동제어 설정</h1>
+            <p class="lead">공기청정기가 켜지고 꺼지는 기준을 조용하게 조정합니다.</p>
+        </div>
+        <nav class="header-actions" aria-label="관리자 작업">
+            <a class="secondary-action" th:href="@{/admin}">관리자 홈</a>
+            <form class="logout" method="post" th:action="@{/admin/logout}">
+                <button type="submit" class="secondary-action">로그아웃</button>
+            </form>
+        </nav>
+    </header>
+
+    <section class="summary-card" aria-labelledby="summaryTitle">
+        <div class="summary-heading">
+            <div>
+                <p class="section-kicker">현재 동작</p>
+                <h2 id="summaryTitle">정책 요약</h2>
+            </div>
+            <div id="enabledBadge" class="state-badge" data-enabled="false">확인 중</div>
+        </div>
+        <ul class="summary-list">
+            <li id="summaryDark">어두움 기준을 불러오는 중입니다.</li>
+            <li id="summaryAir">공기질 기준을 불러오는 중입니다.</li>
+            <li id="summaryCooldown">쿨타임 기준을 불러오는 중입니다.</li>
+        </ul>
+    </section>
+
+    <form id="controlSettingForm" class="settings-form" method="post" th:action="@{/admin/control-settings}">
+        <section class="settings-group" aria-labelledby="autoTitle">
+            <div class="group-title">
+                <h2 id="autoTitle">자동제어</h2>
+            </div>
+            <label class="setting-row switch-row">
+                <span>
+                    <span class="setting-name">자동제어 사용</span>
+                    <span class="setting-help">꺼두면 조건을 만족해도 공기청정기를 제어하지 않습니다.</span>
+                </span>
+                <span class="switch-control">
+                    <input data-field="enabled" type="checkbox" role="switch" aria-label="자동제어 사용">
+                    <span class="switch-track" aria-hidden="true"></span>
+                </span>
+            </label>
+        </section>
+
+        <div id="controlledSettings" class="controlled-settings" data-enabled="true">
+            <div class="disabled-cover" aria-hidden="true">
+                <strong>자동제어가 꺼져 있습니다.</strong>
+                <span>스위치를 켜면 기준을 다시 조정할 수 있습니다.</span>
+            </div>
+
+            <section class="settings-group" aria-labelledby="lightTitle">
+                <div class="group-title">
+                    <h2 id="lightTitle">조도 기준</h2>
+                </div>
+                <label class="setting-row">
+                    <span>
+                        <span class="setting-name">어두움 기준</span>
+                        <span class="setting-help">이 값 이하로 유지되면 어두운 상태로 판단합니다.</span>
+                    </span>
+                    <span class="slider-control">
+                        <input data-field="darkLuxThreshold" type="hidden" required>
+                        <input data-slider="darkLuxThreshold" type="range" min="0" max="100" step="1" aria-label="어두움 기준">
+                        <span data-value="darkLuxThreshold" class="value-pill">10 lux</span>
+                    </span>
+                </label>
+                <label class="setting-row">
+                    <span>
+                        <span class="setting-name">밝음 기준</span>
+                        <span class="setting-help">이 값 이상으로 유지되면 밝은 상태로 판단합니다.</span>
+                    </span>
+                    <span class="slider-control">
+                        <input data-field="brightLuxThreshold" type="hidden" required>
+                        <input data-slider="brightLuxThreshold" type="range" min="0" max="300" step="1" aria-label="밝음 기준">
+                        <span data-value="brightLuxThreshold" class="value-pill">50 lux</span>
+                    </span>
+                </label>
+                <label class="setting-row">
+                    <span>
+                        <span class="setting-name">어두움 지속 시간</span>
+                        <span class="setting-help">어두움이 이 시간만큼 이어지면 꺼짐 조건이 됩니다.</span>
+                    </span>
+                    <span class="slider-control">
+                        <input data-field="darkDetectionTimeThreshold" type="hidden" required>
+                        <input data-slider="darkDetectionTimeThreshold" type="range" min="1" max="120" step="1" aria-label="어두움 지속 시간">
+                        <span data-value="darkDetectionTimeThreshold" class="value-pill">30분</span>
+                    </span>
+                </label>
+                <label class="setting-row">
+                    <span>
+                        <span class="setting-name">밝음 지속 시간</span>
+                        <span class="setting-help">밝음이 이 시간만큼 이어지면 켜짐 조건 중 하나가 충족 됩니다.</span>
+                    </span>
+                    <span class="slider-control">
+                        <input data-field="brightDetectionTimeThreshold" type="hidden" required>
+                        <input data-slider="brightDetectionTimeThreshold" type="range" min="1" max="30" step="1" aria-label="밝음 지속 시간">
+                        <span data-value="brightDetectionTimeThreshold" class="value-pill">3분</span>
+                    </span>
+                </label>
+            </section>
+
+            <section class="settings-group" aria-labelledby="airTitle">
+                <div class="group-title">
+                    <h2 id="airTitle">공기질 기준</h2>
+                </div>
+                <label class="setting-row">
+                    <span>
+                        <span class="setting-name">공기질 확인 시간</span>
+                        <span class="setting-help">최근 몇 분의 공기질을 볼지 정합니다.</span>
+                    </span>
+                    <span class="slider-control">
+                        <input data-field="airQualityDetectionTimeThreshold" type="hidden" required>
+                        <input data-slider="airQualityDetectionTimeThreshold" type="range" min="1" max="30" step="1" aria-label="공기질 확인 시간">
+                        <span data-value="airQualityDetectionTimeThreshold" class="value-pill">5분</span>
+                    </span>
+                </label>
+                <label class="setting-row">
+                    <span>
+                        <span class="setting-name">나쁜 공기질 비율</span>
+                        <span class="setting-help">확인 시간 중 이 비율 이상이 나쁘면 켜짐 조건이 됩니다.</span>
+                    </span>
+                    <span class="slider-control">
+                        <input data-field="badAirQualityRatioThreshold" type="hidden" required>
+                        <input data-slider="badAirQualityRatioThreshold" type="range" min="1" max="100" step="1" aria-label="나쁜 공기질 비율">
+                        <span data-value="badAirQualityRatioThreshold" class="value-pill">80%</span>
+                    </span>
+                </label>
+                <label class="setting-row">
+                    <span>
+                        <span class="setting-name">깨끗한 공기질 비율</span>
+                        <span class="setting-help">확인 시간 중 이 비율 이상이 깨끗하면 꺼짐 조건이 됩니다.</span>
+                    </span>
+                    <span class="slider-control">
+                        <input data-field="cleanAirQualityRatioThreshold" type="hidden" required>
+                        <input data-slider="cleanAirQualityRatioThreshold" type="range" min="1" max="100" step="1" aria-label="깨끗한 공기질 비율">
+                        <span data-value="cleanAirQualityRatioThreshold" class="value-pill">80%</span>
+                    </span>
+                </label>
+            </section>
+
+            <section class="settings-group" aria-labelledby="safetyTitle">
+                <div class="group-title">
+                    <h2 id="safetyTitle">안전장치</h2>
+                </div>
+                <label class="setting-row">
+                    <span>
+                        <span class="setting-name">자동제어 쿨타임</span>
+                        <span class="setting-help">한 번 제어한 뒤 이 시간 동안 추가 제어를 멈춥니다.</span>
+                    </span>
+                    <span class="slider-control">
+                        <input data-field="cooldownMinutes" type="hidden" required>
+                        <input data-slider="cooldownMinutes" type="range" min="0" max="180" step="5" aria-label="자동제어 쿨타임">
+                        <span data-value="cooldownMinutes" class="value-pill">30분</span>
+                    </span>
+                </label>
+            </section>
+        </div>
+
+        <div class="save-bar">
+            <div id="dirtyHint" class="dirty-hint">변경 사항 없음</div>
+            <div class="save-actions">
+                <button id="resetDefaultsButton" type="button" class="reset-button">기본값으로 재설정</button>
+                <button id="saveButton" type="submit" class="save-button" disabled>저장</button>
+            </div>
+        </div>
+    </form>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</main>
+
+<script src="../../static/admin/control-settings.js" th:src="@{/admin/control-settings.js}"></script>
+</body>
+</html>

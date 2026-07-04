@@ -1,4 +1,4 @@
-package jnu.econovation.ecoknockbecentral.airquality.dto.request
+package jnu.econovation.ecoknockbecentral.airquality.dto.rest.request
 
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.OffsetDateTime
