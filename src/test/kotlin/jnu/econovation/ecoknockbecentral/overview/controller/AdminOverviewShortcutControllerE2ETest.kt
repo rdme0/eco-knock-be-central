@@ -19,16 +19,17 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.TestConstructor
 import org.springframework.web.client.RestClient
+import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 @SpringBootTest(
     classes = [EcoKnockBeCentralApplication::class],
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = ["security.admin.master-password=test-master-password"],
 )
 @ActiveProfiles("dev")
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
@@ -88,7 +89,7 @@ class AdminOverviewShortcutControllerE2ETest(
     fun masterPasswordLoginIssuesAdminCookie() {
         val response = postForm(
             path = "/admin/login/master",
-            body = "password=test-master-password",
+            body = adminMasterPasswordFormBody(),
         )
 
         assertThat(response.statusCode).isEqualTo(HttpStatus.FOUND)
@@ -354,7 +355,7 @@ class AdminOverviewShortcutControllerE2ETest(
         path: String,
         accessToken: String? = null,
         adminMasterToken: String? = null,
-    ): org.springframework.http.ResponseEntity<String> {
+    ): ResponseEntity<String> {
         return restClient.method(method)
             .uri(path)
             .headers {
@@ -377,7 +378,7 @@ class AdminOverviewShortcutControllerE2ETest(
     private fun postForm(
         path: String,
         body: String,
-    ): org.springframework.http.ResponseEntity<String> {
+    ): ResponseEntity<String> {
         return restClient.post()
             .uri(path)
             .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -390,11 +391,18 @@ class AdminOverviewShortcutControllerE2ETest(
             }
     }
 
+    private fun adminMasterPasswordFormBody(): String {
+        val password = requireNotNull(System.getenv("ADMIN_MASTER_PASSWORD")) {
+            "ADMIN_MASTER_PASSWORD is required for admin master password login E2E test"
+        }
+        return "password=${URLEncoder.encode(password, StandardCharsets.UTF_8)}"
+    }
+
     private fun postJson(
         path: String,
         accessToken: String,
         body: String,
-    ): org.springframework.http.ResponseEntity<String> {
+    ): ResponseEntity<String> {
         return restClient.post()
             .uri(path)
             .header(HttpHeaders.COOKIE, "$ACCESS_TOKEN=$accessToken")
