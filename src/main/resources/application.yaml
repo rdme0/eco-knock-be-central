@@ -30,6 +30,8 @@ security:
   admin:
     master-password: ${ADMIN_MASTER_PASSWORD}
     master-token-ttl: 1h
+  test-auth:
+    sso-member-id: 0
   jwt:
     secret-key: ${JWT_SECRET_KEY}
   aes256:

@@ -35,12 +35,13 @@ class AdminAuthController(
         response: HttpServletResponse,
         model: Model,
     ): String {
-        val token = adminMasterAuthService.authenticate(password)
-        if (token == null) {
-            model.addAttribute("ssoLoginUrl", adminLoginUrlService.ssoLoginUrl(request))
-            model.addAttribute("errorMessage", "마스터 비밀번호가 올바르지 않습니다.")
-            return "admin/login"
-        }
+        val token = adminMasterAuthService
+            .authenticate(password)
+            ?: run {
+                model.addAttribute("ssoLoginUrl", adminLoginUrlService.ssoLoginUrl(request))
+                model.addAttribute("errorMessage", "마스터 비밀번호가 올바르지 않습니다.")
+                return "admin/login"
+            }
 
         CookieUtil.addCookie(
             request,

@@ -14,6 +14,7 @@ public class AuthPolicyResolver {
             AuthRule.skip("/sso/login", HttpMethod.GET),
             AuthRule.skip("/sso/callback", HttpMethod.GET),
             AuthRule.skip("/auth/reissue", HttpMethod.POST),
+            AuthRule.skip("/auth/test-token", HttpMethod.POST),
             AuthRule.skip("/auth/success"),
             AuthRule.skip("/admin/login", HttpMethod.GET),
             AuthRule.skip("/admin/*.css", HttpMethod.GET),
