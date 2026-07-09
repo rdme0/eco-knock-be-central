@@ -1,10 +1,15 @@
 package jnu.econovation.ecoknockbecentral.auth.service
 
+import jnu.econovation.ecoknockbecentral.auth.config.TestAuthConfig
 import jnu.econovation.ecoknockbecentral.auth.dto.AuthTokenDTO
 import jnu.econovation.ecoknockbecentral.auth.exception.BadRefreshTokenException
+import jnu.econovation.ecoknockbecentral.auth.exception.BadTestTokenPasswordException
 import jnu.econovation.ecoknockbecentral.auth.repository.RefreshTokenRepository
 import jnu.econovation.ecoknockbecentral.auth.repository.RefreshTokenRotationResult.*
+import jnu.econovation.ecoknockbecentral.common.extension.isEqualConstantTime
+import jnu.econovation.ecoknockbecentral.common.exception.client.BadDataMeaningException
 import jnu.econovation.ecoknockbecentral.common.exception.server.InternalServerException
+import jnu.econovation.ecoknockbecentral.common.security.config.AdminSecurityConfig
 import jnu.econovation.ecoknockbecentral.common.security.util.JwtUtil
 import jnu.econovation.ecoknockbecentral.member.service.MemberService
 import mu.KotlinLogging
@@ -15,6 +20,8 @@ class AuthService(
     private val jwtUtil: JwtUtil,
     private val memberService: MemberService,
     private val refreshTokenRepository: RefreshTokenRepository,
+    private val adminSecurityConfig: AdminSecurityConfig,
+    private val testAuthConfig: TestAuthConfig,
 ) {
     companion object {
         private val logger = KotlinLogging.logger {}
@@ -64,6 +71,28 @@ class AuthService(
         return AuthTokenDTO(
             accessToken = jwtUtil.generateAccessToken(memberInfo),
             refreshToken = newRefreshToken,
+        )
+    }
+
+    fun issueTestToken(password: String?): AuthTokenDTO {
+        if (!adminSecurityConfig.masterPassword.isEqualConstantTime(password)) {
+            throw BadTestTokenPasswordException()
+        }
+
+        val ssoMemberId = testAuthConfig.ssoMemberId
+
+        val memberInfo = memberService.getBySSOMemberId(ssoMemberId)
+            ?: throw BadDataMeaningException("테스트 인증 대상 회원을 찾을 수 없습니다.")
+
+        val refreshToken = jwtUtil.generateRefreshToken(memberInfo)
+        val refreshTokenId = jwtUtil.extractTokenId(refreshToken)
+            ?: throw InternalServerException(IllegalStateException("발급한 refresh token에서 jti 추출 실패"))
+
+        refreshTokenRepository.save(memberInfo.id, refreshTokenId)
+
+        return AuthTokenDTO(
+            accessToken = jwtUtil.generateAccessToken(memberInfo),
+            refreshToken = refreshToken,
         )
     }
 }
