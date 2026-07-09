@@ -2,6 +2,7 @@ package jnu.econovation.ecoknockbecentral.overview.controller
 
 import jnu.econovation.ecoknockbecentral.EcoKnockBeCentralApplication
 import jnu.econovation.ecoknockbecentral.auth.constant.AuthConstant.ACCESS_TOKEN
+import jnu.econovation.ecoknockbecentral.auth.constant.AuthConstant.REFRESH_TOKEN
 import jnu.econovation.ecoknockbecentral.common.security.util.JwtUtil
 import jnu.econovation.ecoknockbecentral.member.dto.MemberInfoDTO
 import jnu.econovation.ecoknockbecentral.member.model.entity.Member
@@ -30,6 +31,7 @@ import java.nio.charset.StandardCharsets
 @SpringBootTest(
     classes = [EcoKnockBeCentralApplication::class],
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    properties = ["security.test-auth.sso-member-id=209902010001"],
 )
 @ActiveProfiles("dev")
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
@@ -122,6 +124,39 @@ class AdminOverviewShortcutControllerE2ETest(
         assertThat(response.headers[HttpHeaders.SET_COOKIE].orEmpty())
             .noneMatch { it.startsWith("adminMasterToken=") }
         assertThat(response.body).contains("마스터 비밀번호가 올바르지 않습니다.")
+    }
+
+    @Test
+    @DisplayName("마스터 비밀번호가 맞으면 테스트 계정의 일반 인증 쿠키를 발급한다")
+    fun masterPasswordIssuesTestAuthCookies() {
+        saveMember(209902010001, promoteToAdmin = false)
+
+        val response = postJson(
+            path = "/auth/test-token",
+            body = adminMasterPasswordJsonBody(),
+        )
+
+        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(response.body).contains("\"isSuccess\":true")
+        assertThat(response.headers[HttpHeaders.SET_COOKIE])
+            .anyMatch { it.startsWith("$ACCESS_TOKEN=") }
+        assertThat(response.headers[HttpHeaders.SET_COOKIE])
+            .anyMatch { it.startsWith("$REFRESH_TOKEN=") }
+    }
+
+    @Test
+    @DisplayName("테스트 인증 쿠키 발급은 마스터 비밀번호가 틀리면 실패한다")
+    fun wrongMasterPasswordDoesNotIssueTestAuthCookies() {
+        saveMember(209902010001, promoteToAdmin = false)
+
+        val response = postJson(
+            path = "/auth/test-token",
+            body = """{"password":"wrong-password"}""",
+        )
+
+        assertThat(response.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
+        assertThat(response.headers[HttpHeaders.SET_COOKIE].orEmpty())
+            .noneMatch { it.startsWith("$ACCESS_TOKEN=") || it.startsWith("$REFRESH_TOKEN=") }
     }
 
     @Test
@@ -396,6 +431,35 @@ class AdminOverviewShortcutControllerE2ETest(
             "ADMIN_MASTER_PASSWORD is required for admin master password login E2E test"
         }
         return "password=${URLEncoder.encode(password, StandardCharsets.UTF_8)}"
+    }
+
+    private fun adminMasterPasswordJsonBody(): String {
+        val password = requireNotNull(System.getenv("ADMIN_MASTER_PASSWORD")) {
+            "ADMIN_MASTER_PASSWORD is required for test token E2E test"
+        }
+        return """{"password":"${escapeJson(password)}"}"""
+    }
+
+    private fun escapeJson(value: String): String {
+        return value
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+    }
+
+    private fun postJson(
+        path: String,
+        body: String,
+    ): ResponseEntity<String> {
+        return restClient.post()
+            .uri(path)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(body)
+            .exchange { _, response ->
+                org.springframework.http.ResponseEntity
+                    .status(response.statusCode)
+                    .headers(response.headers)
+                    .body(String(response.body.readAllBytes(), StandardCharsets.UTF_8))
+            }
     }
 
     private fun postJson(

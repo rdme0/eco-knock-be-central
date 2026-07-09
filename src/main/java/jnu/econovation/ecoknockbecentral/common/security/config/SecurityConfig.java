@@ -96,6 +96,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/sso/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/sso/callback").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/reissue").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/test-token").permitAll()
                         .requestMatchers(HttpMethod.GET, "/air-quality/**").permitAll()
                         .anyRequest().authenticated()
                 )
