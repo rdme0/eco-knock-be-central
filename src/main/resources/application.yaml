@@ -61,6 +61,8 @@ whozin:
   token: ${WHOZIN_TOKEN}
 
 management:
+  server:
+    port: 18082
   endpoints:
     web:
       exposure:
