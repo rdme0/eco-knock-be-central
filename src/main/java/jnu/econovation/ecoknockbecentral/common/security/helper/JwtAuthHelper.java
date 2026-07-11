@@ -5,20 +5,16 @@ import jnu.econovation.ecoknockbecentral.common.security.dto.EcoKnockUserDetails
 import jnu.econovation.ecoknockbecentral.common.security.exception.UnauthorizedException;
 import jnu.econovation.ecoknockbecentral.common.security.util.JwtUtil;
 import jnu.econovation.ecoknockbecentral.member.service.MemberService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class JwtAuthHelper {
-
     private final JwtUtil jwtUtil;
     private final MemberService memberService;
-
-    public JwtAuthHelper(JwtUtil jwtUtil, MemberService memberService) {
-        this.jwtUtil = jwtUtil;
-        this.memberService = memberService;
-    }
 
     public Authentication authenticate(String token) {
         if (token == null || token.isBlank()) {
