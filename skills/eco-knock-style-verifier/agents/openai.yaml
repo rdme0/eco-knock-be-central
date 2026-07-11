@@ -1,0 +1,4 @@
+interface:
+  display_name: "Eco Knock Style Verifier"
+  short_description: "Eco Knock 프로덕션 코드 구조·스타일 검증"
+  default_prompt: "Use $eco-knock-style-verifier to independently review my production-code diff for Eco Knock style consistency."
