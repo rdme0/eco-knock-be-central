@@ -1,0 +1,56 @@
+---
+name: eco-knock-style-verifier
+description: Independently review and gate Eco Knock production-code diffs for package structure, Java/Kotlin boundaries, class placement, constructor injection, and consistency with nearby code. Use after any change under src/main and before completion; act as the read-only verifier in the developer → verifier → refactor → verifier workflow.
+---
+
+# Eco Knock Style Verifier
+
+Review production-code changes independently. Do not edit, format, or apply patches. A separate refactor role owns every fix.
+
+## Required handoff
+
+Require all of the following before issuing a verdict:
+
+- Original requirement.
+- Developer-owned `src/main` file list; exclude paths dirty before the task began.
+- Exact diff for those files.
+- Design decisions and test commands/results from the developer.
+
+Review only the owned production changes. Mention pre-existing debt only as non-blocking context and never request its cleanup.
+
+## Review procedure
+
+1. Treat `$eco-knock-maintainer` as the sole authority for code-style and implementation rules. Inspect the changed file plus the closest comparable files in the same domain and role package.
+2. Run `git diff --check` for the handed-off diff. Confirm the owned paths are under `src/main`.
+3. Complete every applicable item in the maintainer compliance checklist. Compare against the closest local precedent; do not apply generic framework preferences over repository precedent.
+4. Return findings only; do not change files. A clear maintainer-rule violation must be sent to a separate refactor role, then this review repeats on the refactored diff.
+
+## Maintainer compliance checklist
+
+For each section below, report `PASS`, `FAIL`, or `N/A` with one concise evidence note. A `FAIL` for an applicable maintainer rule is `blocking` when the corrective structure is clear.
+
+| Maintainer section | Verify |
+| --- | --- |
+| Hard Rules | Nearby-code inspection, role-package placement, domain-language boundary, unnecessary indirection, visibility, `runBlocking`, blocking gRPC, and preservation of pre-existing worktree changes. |
+| Package Style | Layer ownership and dependency direction; normal-domain layering, `airquality` CQRS boundary, `common`, and integration package conventions. |
+| Language Rules | Java/Kotlin choice, Java entity/VO/enum boundary, Java security/infrastructure boundary, Kotlin constructor and companion-object conventions. |
+| Implementation Style | Controller/service/repository boundaries, transactions, validation and mapping placement, configuration/redirect behavior, and scheduler/background-flow behavior. |
+| Persistence And Migrations | Entity/schema change, next Flyway migration, naming, index, and foreign-key requirements. |
+| Testing | Narrowest relevant Gradle test, public-behavior testing, E2E conventions, mocks, and secret handling. |
+| Domain Notes | Apply only the notes for each changed domain; report `N/A` when no domain note applies. |
+
+Do not duplicate or invent style rules outside `$eco-knock-maintainer`. If the maintainer and the closest local precedent genuinely conflict, report `risk` with both sources rather than choosing a new rule.
+
+## Verdict format
+
+Report every finding as:
+
+`[severity] file:line — violated rule or nearby precedent — recommended structure — automatic-refactor: yes|no`
+
+Then include the maintainer compliance checklist as `section — PASS|FAIL|N/A — evidence`.
+
+Use `blocking` only for a clear maintainer-rule violation with a safe corrective structure. Mark unclear or conflicting local precedent as `risk` and set `automatic-refactor: no`. Finish with one of:
+
+- `PASS`: no blocking findings; identify the reviewed files and verification commands.
+- `REFRACTOR REQUIRED`: list blocking findings and the narrowest corrective action.
+- `RISK REMAINS`: no safe automatic refactor is possible; state the competing precedents.
