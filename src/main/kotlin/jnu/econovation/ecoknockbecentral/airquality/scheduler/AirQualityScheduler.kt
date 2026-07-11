@@ -1,12 +1,14 @@
 package jnu.econovation.ecoknockbecentral.airquality.scheduler
 
+import jnu.econovation.ecoknockbecentral.common.metrics.ApplicationMetrics
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
 class AirQualityScheduler(
-    private val jdbcTemplate: JdbcTemplate
+    private val jdbcTemplate: JdbcTemplate,
+    private val metrics: ApplicationMetrics,
 ) {
     companion object {
         private val MATERIALIZED_VIEWS = listOf(
@@ -23,7 +25,9 @@ class AirQualityScheduler(
     @Suppress("SqlSourceToSinkFlow")
     fun refreshAirQualityMaterializedViews() {
         MATERIALIZED_VIEWS.forEach { viewName ->
-            jdbcTemplate.execute("refresh materialized view concurrently $viewName")
+            metrics.recordMaterializedViewRefresh(viewName) {
+                jdbcTemplate.execute("refresh materialized view concurrently $viewName")
+            }
         }
     }
 }

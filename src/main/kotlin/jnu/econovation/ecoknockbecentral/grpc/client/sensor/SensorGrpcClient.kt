@@ -1,6 +1,7 @@
 package jnu.econovation.ecoknockbecentral.grpc.client.sensor
 
 import jnu.econovation.ecoknockbecentral.airquality.dto.grpc.RawSensorDTO
+import jnu.econovation.ecoknockbecentral.common.metrics.ApplicationMetrics
 import jnu.econovation.ecoknockbecentral.grpc.config.EmbeddedGrpcConfig
 import jnu.econovation.ecoknockbecentral.grpc.sensor.v2.GetCurrentSensorRequest
 import jnu.econovation.ecoknockbecentral.grpc.sensor.v2.SensorServiceGrpc
@@ -12,11 +13,14 @@ import java.util.concurrent.TimeUnit
 class SensorGrpcClient(
     private val config: EmbeddedGrpcConfig,
     private val stub: SensorServiceGrpc.SensorServiceBlockingV2Stub,
+    private val metrics: ApplicationMetrics,
 ) {
     suspend fun getCurrentSensor(): RawSensorDTO {
-        val response = stub
-            .withDeadlineAfter(config.timeout.toMillis(), TimeUnit.MILLISECONDS)
-            .getCurrentSensor(GetCurrentSensorRequest.getDefaultInstance())
+        val response = metrics.recordSuspendingGrpcClient("sensor", "get_current") {
+            stub
+                .withDeadlineAfter(config.timeout.toMillis(), TimeUnit.MILLISECONDS)
+                .getCurrentSensor(GetCurrentSensorRequest.getDefaultInstance())
+        }
 
         return RawSensorDTO(
             temperatureC = response.temperatureC,
