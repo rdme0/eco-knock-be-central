@@ -1,6 +1,7 @@
 package jnu.econovation.ecoknockbecentral.overview.controller
 
 import jnu.econovation.ecoknockbecentral.EcoKnockBeCentralApplication
+import jnu.econovation.ecoknockbecentral.admin.config.GrafanaConfig
 import jnu.econovation.ecoknockbecentral.auth.constant.AuthConstant.ACCESS_TOKEN
 import jnu.econovation.ecoknockbecentral.auth.constant.AuthConstant.REFRESH_TOKEN
 import jnu.econovation.ecoknockbecentral.common.security.util.JwtUtil
@@ -31,7 +32,6 @@ import java.nio.charset.StandardCharsets
 @SpringBootTest(
     classes = [EcoKnockBeCentralApplication::class],
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = ["security.test-auth.sso-member-id=209902010001"],
 )
 @ActiveProfiles("dev")
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
@@ -41,6 +41,7 @@ class AdminOverviewShortcutControllerE2ETest(
     private val memberRepository: MemberRepository,
     private val jwtUtil: JwtUtil,
     private val jdbcTemplate: JdbcTemplate,
+    private val grafanaConfig: GrafanaConfig,
 ) {
     private val restClient: RestClient = RestClient.builder()
         .baseUrl("http://localhost:$port")
@@ -191,6 +192,9 @@ class AdminOverviewShortcutControllerE2ETest(
         assertThat(response.body).contains("관리자 기능")
         assertThat(response.body).contains("기본 모아두기 설정하기")
         assertThat(response.body).contains("/admin/overview-shortcuts")
+        assertThat(response.body).contains("href=\"${grafanaConfig.url}\"")
+        assertThat(response.body).contains("target=\"_blank\"")
+        assertThat(response.body).contains("rel=\"noopener noreferrer\"")
     }
 
     @Test
@@ -246,6 +250,7 @@ class AdminOverviewShortcutControllerE2ETest(
         assertThat(response.body).contains("관리자 기능")
         assertThat(response.body).contains("기본 모아두기 설정하기")
         assertThat(response.body).contains("/admin/overview-shortcuts")
+        assertThat(response.body).contains("href=\"${grafanaConfig.url}\"")
     }
 
     @Test

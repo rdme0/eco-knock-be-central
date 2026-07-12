@@ -4,6 +4,7 @@ import jnu.econovation.ecoknockbecentral.airquality.dto.grpc.request.FavoriteLev
 import jnu.econovation.ecoknockbecentral.airquality.dto.grpc.request.Mode
 import jnu.econovation.ecoknockbecentral.airquality.dto.grpc.request.Power
 import jnu.econovation.ecoknockbecentral.airquality.dto.grpc.RawAirPurifierDTO
+import jnu.econovation.ecoknockbecentral.common.metrics.ApplicationMetrics
 import jnu.econovation.ecoknockbecentral.grpc.airpurifier.v1.AirPurifierServiceGrpc
 import jnu.econovation.ecoknockbecentral.grpc.airpurifier.v1.GetCurrentAirPurifierRequest
 import jnu.econovation.ecoknockbecentral.grpc.airpurifier.v1.SetAirPurifierFavoriteLevelRequest
@@ -17,11 +18,14 @@ import java.util.concurrent.TimeUnit
 class AirPurifierGrpcClient(
     private val config: EmbeddedGrpcConfig,
     private val stub: AirPurifierServiceGrpc.AirPurifierServiceBlockingStub,
+    private val metrics: ApplicationMetrics,
 ) {
     fun getCurrentAirPurifier(): RawAirPurifierDTO {
-        val response = stub
-            .withDeadlineAfter(config.timeout.toMillis(), TimeUnit.MILLISECONDS)
-            .getCurrentAirPurifier(GetCurrentAirPurifierRequest.getDefaultInstance())
+        val response = metrics.recordGrpcClient("air_purifier", "get_current") {
+            stub
+                .withDeadlineAfter(config.timeout.toMillis(), TimeUnit.MILLISECONDS)
+                .getCurrentAirPurifier(GetCurrentAirPurifierRequest.getDefaultInstance())
+        }
 
         return RawAirPurifierDTO.from(response)
     }
@@ -31,9 +35,11 @@ class AirPurifierGrpcClient(
             .setOn(power.toBoolean())
             .build()
 
-        val response = stub
-            .withDeadlineAfter(config.timeout.toMillis(), TimeUnit.MILLISECONDS)
-            .setAirPurifierPower(request)
+        val response = metrics.recordGrpcClient("air_purifier", "set_power") {
+            stub
+                .withDeadlineAfter(config.timeout.toMillis(), TimeUnit.MILLISECONDS)
+                .setAirPurifierPower(request)
+        }
 
         return RawAirPurifierDTO.from(response.current)
     }
@@ -43,9 +49,11 @@ class AirPurifierGrpcClient(
             .setMode(mode.toString())
             .build()
 
-        val response = stub
-            .withDeadlineAfter(config.timeout.toMillis(), TimeUnit.MILLISECONDS)
-            .setAirPurifierMode(request)
+        val response = metrics.recordGrpcClient("air_purifier", "set_mode") {
+            stub
+                .withDeadlineAfter(config.timeout.toMillis(), TimeUnit.MILLISECONDS)
+                .setAirPurifierMode(request)
+        }
 
         return RawAirPurifierDTO.from(response.current)
     }
@@ -55,9 +63,11 @@ class AirPurifierGrpcClient(
             .setLevel(level.value)
             .build()
 
-        val response = stub
-            .withDeadlineAfter(config.timeout.toMillis(), TimeUnit.MILLISECONDS)
-            .setAirPurifierFavoriteLevel(request)
+        val response = metrics.recordGrpcClient("air_purifier", "set_favorite_level") {
+            stub
+                .withDeadlineAfter(config.timeout.toMillis(), TimeUnit.MILLISECONDS)
+                .setAirPurifierFavoriteLevel(request)
+        }
 
         return RawAirPurifierDTO.from(response.current)
     }

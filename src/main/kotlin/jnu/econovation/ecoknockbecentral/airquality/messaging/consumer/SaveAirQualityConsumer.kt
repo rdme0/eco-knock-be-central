@@ -4,6 +4,7 @@ import jakarta.annotation.PreDestroy
 import jnu.econovation.ecoknockbecentral.airquality.queue.SaveAirQualityQueue
 import jnu.econovation.ecoknockbecentral.airquality.service.AirQualitySseService
 import jnu.econovation.ecoknockbecentral.airquality.usecase.SaveAirQualityUseCase
+import jnu.econovation.ecoknockbecentral.common.metrics.ApplicationMetrics
 import kotlinx.coroutines.*
 import mu.KotlinLogging
 import org.springframework.boot.context.event.ApplicationReadyEvent
@@ -15,6 +16,7 @@ class SaveAirQualityConsumer(
     private val queue: SaveAirQualityQueue,
     private val saveAirQualityUseCase: SaveAirQualityUseCase,
     private val airQualitySseService: AirQualitySseService,
+    private val metrics: ApplicationMetrics,
 ) : Consumer {
     companion object {
         private val logger = KotlinLogging.logger {}
@@ -42,8 +44,10 @@ class SaveAirQualityConsumer(
     override suspend fun consume() {
         queue.asFlow().collect { command ->
             runCatching {
-                saveAirQualityUseCase.save(command)
-                airQualitySseService.publish(command)
+                metrics.recordQueueProcessing("save_air_quality") {
+                    saveAirQualityUseCase.save(command)
+                    airQualitySseService.publish(command)
+                }
             }.onFailure {
                 logger.error(it) { "air quality save 실패" }
             }

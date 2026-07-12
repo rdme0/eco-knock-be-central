@@ -15,6 +15,7 @@ import jnu.econovation.ecoknockbecentral.control.model.vo.ControlDecision
 import jnu.econovation.ecoknockbecentral.control.model.vo.ControlDecision.TURN_OFF
 import jnu.econovation.ecoknockbecentral.control.model.vo.ControlDecision.TURN_ON
 import jnu.econovation.ecoknockbecentral.control.repository.ControlActionLogRepository
+import jnu.econovation.ecoknockbecentral.common.metrics.ApplicationMetrics
 import jnu.econovation.ecoknockbecentral.grpc.client.airpurifier.AirPurifierGrpcClient
 import jnu.econovation.ecoknockbecentral.light.repository.LightRepository
 import mu.KotlinLogging
@@ -31,6 +32,7 @@ class ControlService(
     private val queryAirQualityUseCase: QueryAirQualityUseCase,
     private val actionLogRepository: ControlActionLogRepository,
     private val controlSettingService: ControlSettingService,
+    private val metrics: ApplicationMetrics,
 ) {
     companion object {
         private val logger = KotlinLogging.logger {}
@@ -211,7 +213,9 @@ class ControlService(
         reason: String,
     ) {
         runCatching {
-            airPurifierGrpcClient.setAirPurifierPower(power)
+            metrics.recordAutoControlAction(decision.name.lowercase()) {
+                airPurifierGrpcClient.setAirPurifierPower(power)
+            }
         }.onSuccess {
             actionLogRepository.save(
                 ControlActionLog.builder()

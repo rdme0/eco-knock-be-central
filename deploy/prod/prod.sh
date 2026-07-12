@@ -11,7 +11,7 @@ fi
 
 case "$command" in
     up)
-        set -- up -d "$@"
+        set -- up -d --force-recreate "$@"
         ;;
     logs)
         set -- logs -f "$@"
