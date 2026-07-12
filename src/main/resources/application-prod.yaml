@@ -12,3 +12,5 @@ spring:
     redis:
       host: ${PROD_REDIS_HOST:redis}
       port: ${PROD_REDIS_PORT:6379}
+grafana:
+  url: ${PROD_GRAFANA_HOST}

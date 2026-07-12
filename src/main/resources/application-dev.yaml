@@ -12,3 +12,6 @@ spring:
     redis:
       host: ${DEV_REDIS_HOST:localhost}
       port: ${DEV_REDIS_PORT:6379}
+
+grafana:
+  url: http://${DEV_GRAFANA_HOST:localhost}:${DEV_GRAFANA_PORT:3000}

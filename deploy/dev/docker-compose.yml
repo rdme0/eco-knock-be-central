@@ -57,7 +57,7 @@ services:
       GF_AUTH_BASIC_ENABLED: "true"
       GF_AUTH_DISABLE_LOGIN_FORM: "false"
       GF_USERS_ALLOW_SIGN_UP: "false"
-      GF_SERVER_ROOT_URL: ${DEV_GRAFANA_URL}:${DEV_GRAFANA_PORT}
+      GF_SERVER_ROOT_URL: ${DEV_GRAFANA_HOST}:${DEV_GRAFANA_PORT}
     ports:
       - "${DEV_GRAFANA_PORT:-3000}:3000"
     volumes:
