@@ -16,7 +16,7 @@ $ComposeArgs = @(
 )
 
 if ($Command -eq "up") {
-    $ComposeArgs += @("up", "-d")
+    $ComposeArgs += @("up", "-d", "--force-recreate", "--remove-orphans")
 } elseif ($Command -eq "logs") {
     $ComposeArgs += @("logs", "-f")
 } else {

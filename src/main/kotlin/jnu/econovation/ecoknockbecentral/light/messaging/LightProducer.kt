@@ -5,6 +5,7 @@ import jnu.econovation.ecoknockbecentral.grpc.client.lightsensor.LightSensorGrpc
 import jnu.econovation.ecoknockbecentral.light.command.SaveLightReportCommand
 import jnu.econovation.ecoknockbecentral.light.dto.RawLightSensorDTO
 import jnu.econovation.ecoknockbecentral.light.queue.SaveLightReportQueue
+import jnu.econovation.ecoknockbecentral.common.metrics.ApplicationMetrics
 import kotlinx.coroutines.*
 import kotlinx.coroutines.time.delay
 import mu.KotlinLogging
@@ -16,7 +17,8 @@ import java.time.Duration
 @Service
 class LightProducer(
     private val lightSensorGrpcClient: LightSensorGrpcClient,
-    private val queue: SaveLightReportQueue
+    private val queue: SaveLightReportQueue,
+    private val metrics: ApplicationMetrics,
 ) {
     companion object {
         private val logger = KotlinLogging.logger {}
@@ -50,12 +52,14 @@ class LightProducer(
 
     private suspend fun pollAndProduce() = supervisorScope {
         while (true) {
+            val pollingSample = metrics.startTimer()
             val lightSensor: RawLightSensorDTO = runCatching {
                 lightSensorGrpcClient.getCurrentLightSensor()
             }.onFailure {
                 logger.error(it) { "grpc light sensor polling 에러" }
             }.getOrNull()
                 ?: run {
+                    metrics.stopPollingCycle(pollingSample, "light", "failure")
                     logger.warn { "gRPC 에러로 인해 light sensor polling ${errorDelay.toSeconds()}초 딜레이" }
                     delay(errorDelay)
                     errorDelay = errorDelay.multipliedBy(2)
@@ -69,6 +73,7 @@ class LightProducer(
 
             queue.enqueue(command)
 
+            metrics.stopPollingCycle(pollingSample, "light", "success")
             errorDelay = INITIAL_ERROR_DELAY
 
             delay(POLLING_DELAY)

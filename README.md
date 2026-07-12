@@ -2,7 +2,7 @@
 
 `eco-knock-be-central`은 임베디드 장치의 센서/조도 센서/공기청정기 gRPC 데이터를 수집하고, 공기질·조도 데이터를 저장·조회하며 공기청정기 자동제어를 수행하는 Spring Boot 기반 중앙 백엔드입니다.
 
-현재 구현은 PostgreSQL 저장소, Redis 기반 refresh token 및 API 문서 공개 상태 저장, Flyway 스키마 관리, SSO 기반 로그인, HttpOnly 쿠키 기반 JWT 인증, 공기질 timeseries 조회 API, SSE 실시간 스트림, overview shortcut API, 조도 리포트 저장, 공기청정기 자동제어, 관리자 SSR 화면, Scalar/OpenAPI 문서, Whozin 공개 회원 조회 연동, Actuator/Prometheus 메트릭 엔드포인트를 포함합니다.
+현재 구현은 PostgreSQL 저장소, Redis 기반 refresh token 및 API 문서 공개 상태 저장, Flyway 스키마 관리, SSO 기반 로그인, HttpOnly 쿠키 기반 JWT 인증, 공기질 timeseries 조회 API, SSE 실시간 스트림, overview shortcut API, 조도 리포트 저장, 공기청정기 자동제어, 관리자 SSR 화면, Scalar/OpenAPI 문서, Whozin 공개 회원 조회 연동, Prometheus/Grafana 기반 성능 모니터링을 포함합니다.
 
 ## 현재 구현 범위
 
@@ -35,6 +35,7 @@
 - Redis 기반 API 문서 공개 상태 저장
 - JWT 쿠키 인증 필터 및 optional 인증 정책
 - Actuator health/info/prometheus 엔드포인트
+- dev/prod Docker Compose의 Prometheus 수집 및 Grafana 성능 대시보드
 - proto 기반 코드 생성 Gradle 설정
 
 ## 아직 미완성인 부분
@@ -227,6 +228,8 @@ src/main/proto
   - 임베디드 gRPC 서버 port입니다.
 - `PROD_THIS_SERVER_URL`
   - 운영 환경에서 관리자 origin 허용 목록에 포함할 현재 서버 URL입니다.
+- `PROD_GRAFANA_HOST`
+  - 운영 Grafana의 외부 HTTPS 주소입니다. 기존 TLS proxy가 이 주소를 Grafana 포트로 전달해야 합니다.
 
 선택:
 
@@ -243,6 +246,9 @@ src/main/proto
 - `PROD_REDIS_HOST` 기본값 `redis`
 - `PROD_REDIS_PORT` 기본값 `6379`
 - `PROD_SERVER_PORT` 기본값 `18081`
+- `DEV_GRAFANA_PORT` 기본값 `3000`
+- `DEV_GRAFANA_HOST` 기본값 `localhost`
+- `PROD_GRAFANA_PORT` 기본값 `3000`
 
 예시:
 
@@ -263,13 +269,14 @@ DEV_REDIS_HOST=localhost
 DEV_REDIS_PORT=6379
 PROD_POSTGRES_USERNAME=postgres
 PROD_POSTGRES_PASSWORD=replace-with-prod-password
+PROD_GRAFANA_HOST=https://monitoring.replace-with-server.example.com
 ```
 
 ## 실행 방법
 
 proto 생성은 `compileJava`, `compileKotlin`, `bootRun` 전에 자동으로 연결되어 있습니다.
 
-로컬 개발용 PostgreSQL/Redis 실행:
+개발 Compose는 PostgreSQL, Redis, Prometheus, Grafana를 실행합니다. Spring Boot 앱은 IntelliJ 또는 `./gradlew bootRun --args='--spring.profiles.active=dev'`로 호스트에서 실행하세요. Grafana는 `DEV_GRAFANA_PORT`(기본 `3000`)로 접속합니다. 기본 `up`은 Grafana를 재생성하고 이전 Compose app 컨테이너가 있다면 제거하므로, `.env`의 `ADMIN_MASTER_PASSWORD` 변경도 Grafana에 반영됩니다.
 
 ```powershell
 .\deploy\dev\dev.ps1
@@ -291,7 +298,7 @@ sh ./deploy/dev/dev.sh ps
 sh ./deploy/dev/dev.sh down
 ```
 
-운영 compose 설정은 Spring Boot 애플리케이션, PostgreSQL, Redis를 함께 실행합니다. 운영 profile은 `prod`로 고정되며 루트 `.env`의 `PROD_...` 값과 공통 secret 값을 사용합니다.
+운영 Compose는 Spring Boot 애플리케이션, PostgreSQL, Redis, Prometheus, Grafana를 함께 실행합니다. 운영 profile은 `prod`로 고정되며 루트 `.env`의 `PROD_...` 값과 공통 secret 값을 사용합니다. 기본 `up`은 앱과 Grafana를 재생성하므로 `.env`의 `ADMIN_MASTER_PASSWORD` 변경도 함께 반영됩니다.
 
 ```powershell
 .\deploy\prod\prod.ps1
@@ -468,9 +475,20 @@ default shortcut 저장은 브라우저 `fetch`로 JSON body를 전송합니다.
 - refresh token 재발급 실패 시 `accessToken`, `refreshToken` 쿠키를 모두 제거합니다.
 - refresh token 재발급은 Redis에 저장된 현재 jti와 요청 token의 jti가 일치할 때만 성공합니다.
 
-## Actuator / Prometheus
+## Prometheus / Grafana
 
-Actuator는 health, info, prometheus 지표를 노출합니다. Prometheus는 actuator prometheus 경로를 scrape하면 됩니다.
+Actuator는 앱의 management 포트 `18082`에서 health, info, prometheus 지표를 노출합니다. dev Compose의 Prometheus는 호스트에서 실행 중인 앱의 `host.docker.internal:18082/actuator/prometheus`를, prod Compose의 Prometheus는 내부 앱 컨테이너의 `app:18082/actuator/prometheus`를 15초마다 scrape합니다. Prometheus UI는 host에 공개하지 않습니다. dev의 management 포트는 로컬 앱이 열지만 Docker Compose는 publish하지 않습니다.
+
+Grafana만 별도 포트로 공개됩니다.
+
+- dev: `http://localhost:${DEV_GRAFANA_PORT:-3000}`
+- prod: `PROD_GRAFANA_HOST` (기존 TLS proxy가 HTTPS를 종료하고 Grafana 포트로 전달)
+- 계정: `admin`
+- 비밀번호: `ADMIN_MASTER_PASSWORD`
+
+Grafana는 datasource와 `Eco Knock Performance` dashboard를 시작 시 자동 provisioning합니다. dashboard에는 HTTP 요청량·p95·5xx 비율, JVM/CPU/heap, Hikari connection, gRPC, polling·queue, 자동제어, materialized view refresh 지표가 포함됩니다.
+
+Grafana의 기존 SQLite DB가 있으면 컨테이너 시작 스크립트가 `ADMIN_MASTER_PASSWORD`로 `admin` 비밀번호를 재설정합니다. 따라서 비밀번호 변경 뒤 dev/prod Compose `up`을 실행하면 앱 관리자 로그인과 Grafana 로그인이 같은 새 비밀번호로 동기화됩니다. 최초 Grafana 부팅은 Grafana의 기본 bootstrap 설정으로 계정을 생성합니다.
 
 ## gRPC
 

@@ -8,6 +8,7 @@ import jnu.econovation.ecoknockbecentral.airquality.dto.grpc.RawAirPurifierDTO
 import jnu.econovation.ecoknockbecentral.airquality.dto.grpc.RawSensorDTO
 import jnu.econovation.ecoknockbecentral.airquality.queue.AutoControlAirPurifierQueue
 import jnu.econovation.ecoknockbecentral.airquality.queue.SaveAirQualityQueue
+import jnu.econovation.ecoknockbecentral.common.metrics.ApplicationMetrics
 import jnu.econovation.ecoknockbecentral.grpc.client.airpurifier.AirPurifierGrpcClient
 import jnu.econovation.ecoknockbecentral.grpc.client.sensor.SensorGrpcClient
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -31,6 +32,7 @@ class AirQualityProducer(
     private val airPurifierGrpcClient: AirPurifierGrpcClient,
     private val saveQueue: SaveAirQualityQueue,
     private val autoControlQueue: AutoControlAirPurifierQueue,
+    private val metrics: ApplicationMetrics,
 ) {
     companion object {
         private val logger = KotlinLogging.logger {}
@@ -64,6 +66,7 @@ class AirQualityProducer(
 
     private suspend fun pollAndProduce() = supervisorScope {
         while (true) {
+            val pollingSample = metrics.startTimer()
             val sensorDeferred = async {
                 runCatching { sensorGrpcClient.getCurrentSensor() }
             }
@@ -85,6 +88,7 @@ class AirQualityProducer(
 
             val failed = (sensor == null || airPurifier == null)
             if (failed) {
+                metrics.stopPollingCycle(pollingSample, "air_quality", "failure")
                 logger.warn { "gRPC 에러로 인해 polling ${errorDelay.toSeconds()}초 딜레이" }
                 delay(errorDelay)
                 errorDelay = errorDelay.multipliedBy(2)
@@ -107,6 +111,7 @@ class AirQualityProducer(
 
             autoControlQueue.enqueue(autoControlCommand)
 
+            metrics.stopPollingCycle(pollingSample, "air_quality", "success")
             errorDelay = INITIAL_ERROR_DELAY
 
             delay(POLLING_DELAY)

@@ -3,6 +3,7 @@ package jnu.econovation.ecoknockbecentral.light.messaging
 import jakarta.annotation.PreDestroy
 import jnu.econovation.ecoknockbecentral.light.queue.SaveLightReportQueue
 import jnu.econovation.ecoknockbecentral.light.service.LightReportService
+import jnu.econovation.ecoknockbecentral.common.metrics.ApplicationMetrics
 import kotlinx.coroutines.*
 import mu.KotlinLogging
 import org.springframework.boot.context.event.ApplicationReadyEvent
@@ -12,7 +13,8 @@ import org.springframework.stereotype.Service
 @Service
 class LightConsumer(
     private val queue: SaveLightReportQueue,
-    private val service: LightReportService
+    private val service: LightReportService,
+    private val metrics: ApplicationMetrics,
 ) {
     companion object {
         private val logger = KotlinLogging.logger {}
@@ -40,7 +42,9 @@ class LightConsumer(
     private suspend fun consume() {
         queue.asFlow().collect { command ->
             runCatching {
-                service.saveReport(command)
+                metrics.recordQueueProcessing("save_light_report") {
+                    service.saveReport(command)
+                }
             }.onFailure { throwable ->
                 logger.error(throwable) { "light report save 실패" }
             }

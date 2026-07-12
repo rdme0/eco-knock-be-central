@@ -2,6 +2,7 @@ package jnu.econovation.ecoknockbecentral.airquality.messaging.consumer
 
 import jakarta.annotation.PreDestroy
 import jnu.econovation.ecoknockbecentral.airquality.queue.AutoControlAirPurifierQueue
+import jnu.econovation.ecoknockbecentral.common.metrics.ApplicationMetrics
 import jnu.econovation.ecoknockbecentral.control.service.ControlService
 import kotlinx.coroutines.*
 import mu.KotlinLogging
@@ -12,7 +13,8 @@ import org.springframework.stereotype.Service
 @Service
 class AutoControlAirPurifierConsumer(
     private val queue: AutoControlAirPurifierQueue,
-    private val controlService: ControlService
+    private val controlService: ControlService,
+    private val metrics: ApplicationMetrics,
 ) : Consumer {
     companion object {
         private val logger = KotlinLogging.logger {}
@@ -40,7 +42,9 @@ class AutoControlAirPurifierConsumer(
     override suspend fun consume() {
         queue.asFlow().collect { command ->
             runCatching {
-                controlService.autoControlAirPurifier(command = command)
+                metrics.recordQueueProcessing("auto_control_air_purifier") {
+                    controlService.autoControlAirPurifier(command = command)
+                }
             }.onFailure {
                 logger.error(it) { "공기청정기 auto control 실패" }
             }
