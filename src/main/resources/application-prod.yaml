@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://${PROD_POSTGRES_HOST:postgres}:${PROD_POSTGRES_PORT:5432}/ecoknock
+    url: jdbc:postgresql://${PROD_POSTGRES_HOST}:${PROD_POSTGRES_PORT}/ecoknock
     username: ${PROD_POSTGRES_USERNAME}
     password: ${PROD_POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
@@ -10,7 +10,8 @@ spring:
     hibernate.ddl-auto: validate
   data:
     redis:
-      host: ${PROD_REDIS_HOST:redis}
-      port: ${PROD_REDIS_PORT:6379}
+      host: ${PROD_REDIS_HOST}
+      port: ${PROD_REDIS_PORT}
+
 grafana:
   url: ${PROD_GRAFANA_HOST}
