@@ -8,3 +8,11 @@ scrape_configs:
       - targets: [ "app:18082" ]
         labels:
           environment: prod
+
+  - job_name: eco-knock-embedded
+    metrics_path: /metrics
+    static_configs:
+      - targets: [ "__EMBEDDED_SERVER_HOST__:19996" ]
+        labels:
+          environment: prod
+          service: embedded

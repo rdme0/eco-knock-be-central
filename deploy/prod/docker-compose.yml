@@ -57,14 +57,17 @@ services:
   prometheus:
     image: prom/prometheus:v3.7.3
     container_name: eco-knock-prod-prometheus
+    environment:
+      EMBEDDED_SERVER_HOST: ${EMBEDDED_SERVER_HOST}
     command:
-      - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.retention.time=15d
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../shared/prometheus/startup.sh:/etc/prometheus/startup.sh:ro
       - prometheus-data:/prometheus
     depends_on:
       - app
+    entrypoint: [ "sh", "/etc/prometheus/startup.sh" ]
     restart: unless-stopped
 
   grafana:
