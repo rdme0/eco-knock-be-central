@@ -1,5 +1,5 @@
 package jnu.econovation.ecoknockbecentral.member.model.vo;
 
 public enum Role {
-    USER, ADMIN
+    USER, ADMIN, GUEST
 }
