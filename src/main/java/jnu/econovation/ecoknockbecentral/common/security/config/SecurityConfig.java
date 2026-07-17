@@ -97,8 +97,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/sso/callback").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/reissue").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/test-token").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/guest").permitAll()
                         .requestMatchers(HttpMethod.GET, "/air-quality/**").permitAll()
-                        .anyRequest().authenticated()
+                        .requestMatchers(HttpMethod.GET, "/overview/shortcuts").hasAnyRole("GUEST", "USER", "ADMIN")
+                        .anyRequest().hasAnyRole("USER", "ADMIN")
                 )
                 .csrf(AbstractHttpConfigurer::disable)
                 .exceptionHandling(exception -> exception
