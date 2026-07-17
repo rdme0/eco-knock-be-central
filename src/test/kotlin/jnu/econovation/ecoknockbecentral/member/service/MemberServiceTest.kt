@@ -14,6 +14,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.TestConstructor
+import java.time.Instant
 
 @SpringBootTest(
     classes = [EcoKnockBeCentralApplication::class],
@@ -98,6 +99,20 @@ class MemberServiceTest(
 
         val shortcuts = overviewShortcutRepository.findAllByMemberIdOrderBySortOrderAsc(memberInfo.id)
         assertThat(shortcuts.map { it.name }).containsExactly("첫째", "둘째")
+    }
+
+    @Test
+    @DisplayName("게스트 회원 생성은 사용자 바로가기를 초기화하지 않는다")
+    fun guestDoesNotInitializeOverviewShortcuts() {
+        val guest = memberService.createGuest(Instant.now().plusSeconds(60))
+
+        try {
+            val shortcuts = overviewShortcutRepository.findAllByMemberIdOrderBySortOrderAsc(guest.id)
+
+            assertThat(shortcuts).isEmpty()
+        } finally {
+            jdbcTemplate.update("delete from member where id = ?", guest.id)
+        }
     }
 
     private fun newSsoMember(ssoMemberId: Long): SSOMeDTO {

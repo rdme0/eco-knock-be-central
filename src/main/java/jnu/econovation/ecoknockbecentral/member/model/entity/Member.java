@@ -11,6 +11,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
+
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -19,7 +21,7 @@ public class Member extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private Long ssoMemberId;
 
     @Column(nullable = false)
@@ -27,16 +29,18 @@ public class Member extends BaseEntity {
     private Role role;
 
     @Embedded
-    @AttributeOverride(name = "value", column = @Column(name = "cohort", nullable = false))
+    @AttributeOverride(name = "value", column = @Column(name = "cohort"))
     private Cohort cohort;
 
     @Column(nullable = false)
     @Convert(converter = StringEncryptConverter.class)
     private String name;
 
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private ActiveStatus status;
+
+    @Column(name = "guest_expires_at")
+    private Instant guestExpiresAt;
 
     @Builder
     Member(
@@ -50,6 +54,14 @@ public class Member extends BaseEntity {
         this.cohort = cohort;
         this.name = name;
         this.status = status;
+    }
+
+    public static Member createGuest(Instant guestExpiresAt) {
+        Member member = new Member();
+        member.role = Role.GUEST;
+        member.name = "게스트";
+        member.guestExpiresAt = guestExpiresAt;
+        return member;
     }
 
     public void promoteToAdmin() {

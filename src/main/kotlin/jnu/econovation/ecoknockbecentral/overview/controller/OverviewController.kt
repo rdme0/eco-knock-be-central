@@ -4,18 +4,20 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jnu.econovation.ecoknockbecentral.common.dto.response.CommonResponse
 import jnu.econovation.ecoknockbecentral.common.dto.response.CommonResponse.emptySuccess
 import jnu.econovation.ecoknockbecentral.common.dto.response.CommonResponse.success
-import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.BAD_DATA_MEANING_EXAMPLE_NAME
-import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.BAD_DATA_MEANING_EXAMPLE_REF
-import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.BAD_DATA_SYNTAX_EXAMPLE_NAME
-import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.BAD_DATA_SYNTAX_EXAMPLE_REF
-import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.EMPTY_SUCCESS_EXAMPLE_NAME
-import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.EMPTY_SUCCESS_EXAMPLE_REF
-import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.UNAUTHORIZED_EXAMPLE_NAME
-import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.UNAUTHORIZED_EXAMPLE_REF
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.BAD_DATA_MEANING_EXAMPLE_NAME
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.BAD_DATA_MEANING_EXAMPLE_REF
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.BAD_DATA_SYNTAX_EXAMPLE_NAME
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.BAD_DATA_SYNTAX_EXAMPLE_REF
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.EMPTY_SUCCESS_EXAMPLE_NAME
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.EMPTY_SUCCESS_EXAMPLE_REF
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.UNAUTHORIZED_EXAMPLE_NAME
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.UNAUTHORIZED_EXAMPLE_REF
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.ACCESS_TOKEN_SECURITY_SCHEME_NAME
 import jnu.econovation.ecoknockbecentral.common.security.dto.EcoKnockUserDetails
 import jnu.econovation.ecoknockbecentral.overview.dto.request.UpdateOverviewShortcutRequest
 import jnu.econovation.ecoknockbecentral.overview.dto.response.GetShortcutsResponse
@@ -29,12 +31,13 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @RequestMapping("/overview/shortcuts")
 @Tag(name = "Overview", description = "사용자 모아두기 바로가기 API")
+@SecurityRequirement(name = ACCESS_TOKEN_SECURITY_SCHEME_NAME)
 class OverviewController(private val service: OverviewService) {
 
     @GetMapping(produces = [MediaType.APPLICATION_JSON_VALUE])
     @Operation(
         summary = "내 모아두기 바로가기 조회",
-        description = "현재 로그인한 사용자의 모아두기 바로가기 목록을 조회합니다.",
+        description = "현재 로그인한 사용자 또는 게스트의 모아두기 바로가기 목록을 조회합니다. 게스트는 읽기만 가능합니다.",
         responses = [
             ApiResponse(responseCode = "200", description = "조회 성공"),
             ApiResponse(

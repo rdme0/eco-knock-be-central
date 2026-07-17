@@ -13,6 +13,7 @@ public enum ErrorCode {
     // --- AUTH ---
     BAD_ACCESS_TOKEN(Domain.AUTH, HttpStatus.UNAUTHORIZED, 1, "Access Token이 올바르지 않습니다."),
     BAD_REFRESH_TOKEN(Domain.AUTH, HttpStatus.UNAUTHORIZED, 2, "Refresh Token이 올바르지 않습니다."),
+    GUEST_LOGIN_RATE_LIMIT_EXCEEDED(Domain.AUTH, HttpStatus.TOO_MANY_REQUESTS, 3, "게스트 로그인 요청이 너무 많습니다."),
 
     // --- COMMON ---
     INVALID_INPUT_VALUE(Domain.COMMON, HttpStatus.BAD_REQUEST, 1, "유효하지 않은 입력 값입니다."),

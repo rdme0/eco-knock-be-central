@@ -1,6 +1,8 @@
-package jnu.econovation.ecoknockbecentral.common.openapi
+package jnu.econovation.ecoknockbecentral.common.openapi.service
 
 import mu.KotlinLogging
+import jnu.econovation.ecoknockbecentral.common.openapi.dto.ApiDocAccessResponse
+import jnu.econovation.ecoknockbecentral.common.openapi.repository.ApiDocAccessRepository
 import org.springframework.stereotype.Service
 
 @Service
@@ -20,11 +22,3 @@ class ApiDocAccessService(
         return ApiDocAccessResponse(enabled = enabled)
     }
 }
-
-data class ApiDocAccessResponse(
-    val enabled: Boolean,
-)
-
-data class UpdateApiDocAccessRequest(
-    val enabled: Boolean,
-)

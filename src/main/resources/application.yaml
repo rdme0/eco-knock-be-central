@@ -9,6 +9,7 @@ spring:
   threads:
     virtual:
       enabled: true
+
 server:
   port: 18081
 
@@ -27,6 +28,9 @@ security:
   auth-policy:
     access-token-ttl: 6h
     refresh-token-ttl: 60d
+    guest-session-ttl: 24h
+    guest-login-rate-limit: 5
+    guest-login-rate-limit-window: 1h
   admin:
     master-password: ${ADMIN_MASTER_PASSWORD}
     master-token-ttl: 1h
@@ -61,6 +65,10 @@ sso:
 whozin:
   base-url: https://be.whozin.econovation.kr
   token: ${WHOZIN_TOKEN}
+
+ai-server:
+  base-url: ${AI_SERVER_HOST}
+  timeout: 30s
 
 management:
   server:
