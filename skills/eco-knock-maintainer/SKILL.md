@@ -22,6 +22,7 @@ Use this skill when working on application code in `eco-knock-be-central`.
 - Do not use `runBlocking` in Spring controllers, services, or schedulers.
 - With blocking gRPC stubs, expose normal functions for normal Spring code. Use `suspend` only for APIs intended to be called from coroutine loops.
 - Preserve user or unrelated worktree changes. Never revert unrelated dirty files.
+- When adding an HTTP endpoint or changing an endpoint's authorization policy, ask the user whether `GUEST` should be added to the explicit guest allowlist. Do not add it unless the user explicitly approves.
 
 ## Package Style
 
