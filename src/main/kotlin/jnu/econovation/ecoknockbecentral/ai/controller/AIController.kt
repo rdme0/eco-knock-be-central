@@ -1,0 +1,65 @@
+package jnu.econovation.ecoknockbecentral.ai.controller
+
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.ExampleObject
+import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.tags.Tag
+import jnu.econovation.ecoknockbecentral.ai.dto.aiserver.response.AIServerResponse
+import jnu.econovation.ecoknockbecentral.ai.dto.client.request.AIChatRequest
+import jnu.econovation.ecoknockbecentral.ai.service.AIService
+import jnu.econovation.ecoknockbecentral.common.dto.response.CommonResponse
+import jnu.econovation.ecoknockbecentral.common.dto.response.CommonResponse.success
+import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.UNAUTHORIZED_EXAMPLE_NAME
+import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.UNAUTHORIZED_EXAMPLE_REF
+import jnu.econovation.ecoknockbecentral.common.security.dto.EcoKnockUserDetails
+import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
+import org.springframework.http.ResponseEntity.ok
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestPart
+import org.springframework.web.bind.annotation.RestController
+
+@RestController
+@RequestMapping("/ai/chat")
+@Tag(name = "AI Chat", description = "AI 채팅 API")
+class AIController(
+    private val service: AIService,
+) {
+    @PostMapping(
+        consumes = [MediaType.MULTIPART_FORM_DATA_VALUE],
+        produces = [MediaType.APPLICATION_JSON_VALUE],
+    )
+    @Operation(
+        summary = "AI 채팅",
+        description = "이전 대화 최대 20쌍과 현재 질문을 AI 서버로 전달하고 답변을 반환합니다. 채팅 히스토리 저장 실패는 답변 반환에 영향을 주지 않습니다.",
+        responses = [
+            ApiResponse(responseCode = "200", description = "AI 답변 반환"),
+            ApiResponse(
+                responseCode = "401",
+                description = "인증 필요",
+                content = [Content(
+                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    examples = [ExampleObject(
+                        name = UNAUTHORIZED_EXAMPLE_NAME,
+                        ref = UNAUTHORIZED_EXAMPLE_REF,
+                    )],
+                )],
+            ),
+        ],
+    )
+    fun chat(
+        @AuthenticationPrincipal userDetails: EcoKnockUserDetails,
+        @Parameter(description = "AI에게 전달할 질문", required = true)
+        @RequestPart("question") question: String,
+    ): ResponseEntity<CommonResponse<AIServerResponse>> {
+        val response = service.chat(
+            memberInfo = userDetails.memberInfo,
+            request = AIChatRequest(question = question),
+        )
+        return ok(success(response))
+    }
+}
