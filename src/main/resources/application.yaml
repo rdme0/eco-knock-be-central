@@ -36,6 +36,8 @@ security:
     secret-key: ${JWT_SECRET_KEY}
   aes256:
     key: ${AES256_KEY}
+  wallet:
+    encryption-key: ${WALLET_ENCRYPTION_KEY}
   uri:
     allowed-front-end-origins:
       - http://localhost:*
