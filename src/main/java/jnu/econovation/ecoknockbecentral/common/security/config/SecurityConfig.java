@@ -3,7 +3,7 @@ package jnu.econovation.ecoknockbecentral.common.security.config;
 import jnu.econovation.ecoknockbecentral.common.security.filter.AdminMasterAuthFilter;
 import jnu.econovation.ecoknockbecentral.common.security.filter.JwtAuthFilter;
 import jnu.econovation.ecoknockbecentral.common.security.filter.SSORedirectParamFilter;
-import jnu.econovation.ecoknockbecentral.common.openapi.ApiDocAccessFilter;
+import jnu.econovation.ecoknockbecentral.common.security.filter.ApiDocAccessFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
