@@ -31,12 +31,13 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @RequestMapping("/overview/shortcuts")
 @Tag(name = "Overview", description = "사용자 모아두기 바로가기 API")
+@SecurityRequirement(name = ACCESS_TOKEN_SECURITY_SCHEME_NAME)
 class OverviewController(private val service: OverviewService) {
 
     @GetMapping(produces = [MediaType.APPLICATION_JSON_VALUE])
     @Operation(
         summary = "내 모아두기 바로가기 조회",
-        description = "현재 로그인한 사용자의 모아두기 바로가기 목록을 조회합니다.",
+        description = "현재 로그인한 사용자 또는 게스트의 모아두기 바로가기 목록을 조회합니다. 게스트는 읽기만 가능합니다.",
         responses = [
             ApiResponse(responseCode = "200", description = "조회 성공"),
             ApiResponse(

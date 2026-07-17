@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/ai/chat")
 @Tag(name = "AI Chat", description = "AI 채팅 API")
+@SecurityRequirement(name = ACCESS_TOKEN_SECURITY_SCHEME_NAME)
 class AIController(
     private val service: AIService,
 ) {
@@ -50,6 +51,17 @@ class AIController(
                     examples = [ExampleObject(
                         name = UNAUTHORIZED_EXAMPLE_NAME,
                         ref = UNAUTHORIZED_EXAMPLE_REF,
+                    )],
+                )],
+            ),
+            ApiResponse(
+                responseCode = "500",
+                description = "AI 서버 통신 또는 내부 처리 오류",
+                content = [Content(
+                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    examples = [ExampleObject(
+                        name = INTERNAL_SERVER_ERROR_EXAMPLE_NAME,
+                        ref = INTERNAL_SERVER_ERROR_EXAMPLE_REF,
                     )],
                 )],
             ),

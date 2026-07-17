@@ -37,6 +37,7 @@ class AirQualityTimeseriesController(
     @Operation(
         summary = "공기질 시계열 조회",
         description = "resolution, from, to 기준으로 공기질 그래프 포인트를 조회합니다.",
+        security = [],
         parameters = [
             Parameter(
                 name = "resolution",
@@ -93,6 +94,7 @@ class AirQualityTimeseriesController(
     @Operation(
         summary = "공기질 과거 시계열 조회",
         description = "before 이전 공기질 그래프 포인트를 최신순 기준 limit 만큼 조회합니다.",
+        security = [],
         parameters = [
             Parameter(
                 name = "resolution",

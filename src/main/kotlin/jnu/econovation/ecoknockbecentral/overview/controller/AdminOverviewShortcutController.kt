@@ -32,6 +32,12 @@ import org.springframework.web.bind.annotation.*
 @Controller
 @RequestMapping("/admin")
 @Tag(name = "Admin", description = "관리자 JSON API")
+@SecurityRequirements(
+    value = [
+        SecurityRequirement(name = ACCESS_TOKEN_SECURITY_SCHEME_NAME),
+        SecurityRequirement(name = ADMIN_MASTER_TOKEN_SECURITY_SCHEME_NAME),
+    ]
+)
 class AdminOverviewShortcutController(
     private val overviewService: OverviewService,
 ) {
@@ -85,6 +91,14 @@ class AdminOverviewShortcutController(
                 )]
             ),
             ApiResponse(responseCode = "403", description = "관리자 권한 없음", content = [Content()]),
+            ApiResponse(
+                responseCode = "401",
+                description = "인증 필요",
+                content = [Content(
+                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    examples = [ExampleObject(name = UNAUTHORIZED_EXAMPLE_NAME, ref = UNAUTHORIZED_EXAMPLE_REF)]
+                )]
+            ),
             ApiResponse(
                 responseCode = "422",
                 description = "요청 본문 의미 오류",

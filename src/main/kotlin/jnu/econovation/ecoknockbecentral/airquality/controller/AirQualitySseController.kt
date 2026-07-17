@@ -23,6 +23,7 @@ class AirQualitySseController(
     @Operation(
         summary = "공기질 SSE 스트림 연결",
         description = "실시간 공기질 이벤트를 text/event-stream으로 구독합니다. 연결 직후 connected 이벤트와 ok 데이터를 보냅니다.",
+        security = [],
         responses = [
             ApiResponse(
                 responseCode = "200",
