@@ -48,6 +48,7 @@ class AuthController(
     @Operation(
         summary = "인증 토큰 재발급",
         description = "refreshToken 쿠키를 검증하고 accessToken, refreshToken 쿠키를 재발급합니다.",
+        security = [],
         responses = [
             ApiResponse(
                 responseCode = "200",
@@ -88,7 +89,7 @@ class AuthController(
                 response,
                 ACCESS_TOKEN,
                 tokens.accessToken,
-                authPolicyConfig.accessTokenTTL.toSeconds().toInt(),
+                if (tokens.isSessionCookie) -1 else authPolicyConfig.accessTokenTTL.toSeconds().toInt(),
             )
 
             CookieUtil.addCookie(
@@ -96,7 +97,7 @@ class AuthController(
                 response,
                 REFRESH_TOKEN,
                 tokens.refreshToken,
-                authPolicyConfig.refreshTokenTTL.toSeconds().toInt(),
+                if (tokens.isSessionCookie) -1 else authPolicyConfig.refreshTokenTTL.toSeconds().toInt(),
             )
 
             ok(emptySuccess())
@@ -108,6 +109,38 @@ class AuthController(
         }
     }
 
+    @PostMapping("/guest")
+    @Operation(
+        summary = "게스트 로그인",
+        description = "임시 게스트 회원을 생성하고 24시간 동안 유효한 세션 쿠키를 발급합니다. 게스트는 허용된 조회 API만 사용할 수 있습니다.",
+        security = [],
+        responses = [
+            ApiResponse(responseCode = "204", description = "게스트 로그인 성공", content = [Content()]),
+            ApiResponse(
+                responseCode = "429",
+                description = "IP별 게스트 로그인 횟수 초과",
+                content = [Content(
+                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    examples = [ExampleObject(
+                        name = GUEST_LOGIN_RATE_LIMIT_EXCEEDED_EXAMPLE_NAME,
+                        ref = GUEST_LOGIN_RATE_LIMIT_EXCEEDED_EXAMPLE_REF,
+                    )]
+                )]
+            )
+        ]
+    )
+    fun loginAsGuest(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+    ): ResponseEntity<Void> {
+        val tokens = authService.issueGuestToken(request.remoteAddr)
+
+        CookieUtil.addCookie(request, response, ACCESS_TOKEN, tokens.accessToken, -1)
+        CookieUtil.addCookie(request, response, REFRESH_TOKEN, tokens.refreshToken, -1)
+
+        return noContent().build()
+    }
+
     @PostMapping(
         "/test-token",
         consumes = [MediaType.APPLICATION_JSON_VALUE],
@@ -116,6 +149,7 @@ class AuthController(
     @Operation(
         summary = "테스트 인증 쿠키 발급",
         description = "관리자 마스터 비밀번호를 검증하고 운영 테스트용 고정 회원의 accessToken, refreshToken 쿠키를 발급합니다.",
+        security = [],
         responses = [
             ApiResponse(
                 responseCode = "200",
