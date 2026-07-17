@@ -16,10 +16,10 @@ import jnu.econovation.ecoknockbecentral.airquality.dto.internal.AirQualityTimes
 import jnu.econovation.ecoknockbecentral.airquality.usecase.QueryAirQualityUseCase
 import jnu.econovation.ecoknockbecentral.common.dto.response.CommonResponse
 import jnu.econovation.ecoknockbecentral.common.dto.response.CommonResponse.success
-import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.AIR_QUALITY_BAD_REQUEST_EXAMPLE_NAME
-import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.AIR_QUALITY_BAD_REQUEST_EXAMPLE_REF
-import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.AIR_QUALITY_HISTORY_LIMIT_EXAMPLE_NAME
-import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.AIR_QUALITY_HISTORY_LIMIT_EXAMPLE_REF
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.AIR_QUALITY_BAD_REQUEST_EXAMPLE_NAME
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.AIR_QUALITY_BAD_REQUEST_EXAMPLE_REF
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.AIR_QUALITY_HISTORY_LIMIT_EXAMPLE_NAME
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.AIR_QUALITY_HISTORY_LIMIT_EXAMPLE_REF
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.http.ResponseEntity.ok

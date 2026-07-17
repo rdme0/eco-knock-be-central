@@ -13,11 +13,11 @@ import jnu.econovation.ecoknockbecentral.auth.config.AuthPolicyConfig
 import jnu.econovation.ecoknockbecentral.auth.constant.AuthConstant.ACCESS_TOKEN
 import jnu.econovation.ecoknockbecentral.auth.constant.AuthConstant.REFRESH_TOKEN
 import jnu.econovation.ecoknockbecentral.common.cookie.util.CookieUtil
-import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.BAD_SSO_TOKEN_EXAMPLE_NAME
-import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.BAD_SSO_TOKEN_EXAMPLE_REF
-import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.INVALID_REDIRECT_URI_EXAMPLE_NAME
-import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.INVALID_REDIRECT_URI_EXAMPLE_REF
-import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.REDIRECT_RESPONSE
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.BAD_SSO_TOKEN_EXAMPLE_NAME
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.BAD_SSO_TOKEN_EXAMPLE_REF
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.INVALID_REDIRECT_URI_EXAMPLE_NAME
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.INVALID_REDIRECT_URI_EXAMPLE_REF
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.REDIRECT_RESPONSE
 import jnu.econovation.ecoknockbecentral.sso.config.SSOConfig
 import jnu.econovation.ecoknockbecentral.sso.constant.SSOConstant.ACCESS_TOKEN_COOKIE
 import jnu.econovation.ecoknockbecentral.sso.constant.SSOConstant.CLIENT_TYPE_WEB

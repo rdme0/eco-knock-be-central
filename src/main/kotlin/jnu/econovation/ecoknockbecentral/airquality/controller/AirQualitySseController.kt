@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import jnu.econovation.ecoknockbecentral.airquality.service.AirQualitySseService
-import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.SSE_RESPONSE
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.SSE_RESPONSE
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
