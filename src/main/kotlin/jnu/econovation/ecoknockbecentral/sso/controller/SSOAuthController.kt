@@ -13,11 +13,11 @@ import jnu.econovation.ecoknockbecentral.auth.config.AuthPolicyConfig
 import jnu.econovation.ecoknockbecentral.auth.constant.AuthConstant.ACCESS_TOKEN
 import jnu.econovation.ecoknockbecentral.auth.constant.AuthConstant.REFRESH_TOKEN
 import jnu.econovation.ecoknockbecentral.common.cookie.util.CookieUtil
-import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.BAD_SSO_TOKEN_EXAMPLE_NAME
-import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.BAD_SSO_TOKEN_EXAMPLE_REF
-import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.INVALID_REDIRECT_URI_EXAMPLE_NAME
-import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.INVALID_REDIRECT_URI_EXAMPLE_REF
-import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.REDIRECT_RESPONSE
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.BAD_SSO_TOKEN_EXAMPLE_NAME
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.BAD_SSO_TOKEN_EXAMPLE_REF
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.INVALID_REDIRECT_URI_EXAMPLE_NAME
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.INVALID_REDIRECT_URI_EXAMPLE_REF
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.REDIRECT_RESPONSE
 import jnu.econovation.ecoknockbecentral.sso.config.SSOConfig
 import jnu.econovation.ecoknockbecentral.sso.constant.SSOConstant.ACCESS_TOKEN_COOKIE
 import jnu.econovation.ecoknockbecentral.sso.constant.SSOConstant.CLIENT_TYPE_WEB
@@ -48,9 +48,12 @@ class SSOAuthController(
                 name = "redirect",
                 `in` = ParameterIn.QUERY,
                 required = true,
-                description = "SSO 완료 후 이동할 프론트 URL"
+                description = "SSO 완료 후 이동할 프론트 URL",
+                schema = io.swagger.v3.oas.annotations.media.Schema(type = "string", format = "uri"),
+                example = "https://frontend.example.com"
             )
         ],
+        security = [],
         responses = [
             ApiResponse(responseCode = "302", description = REDIRECT_RESPONSE, content = [Content()]),
             ApiResponse(
@@ -79,7 +82,8 @@ class SSOAuthController(
     @GetMapping("/sso/callback")
     @Operation(
         summary = "SSO 콜백 처리",
-        description = "SSO at 쿠키로 회원을 인증하고 서비스 인증 쿠키를 발급한 뒤 프론트 URL로 이동합니다.",
+        description = "SSO access token 쿠키로 회원을 인증하고 서비스 인증 쿠키를 발급한 뒤 프론트 URL로 이동합니다.",
+        security = [],
         responses = [
             ApiResponse(responseCode = "302", description = REDIRECT_RESPONSE, content = [Content()]),
             ApiResponse(

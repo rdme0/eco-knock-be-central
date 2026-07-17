@@ -5,6 +5,7 @@ import org.springframework.core.io.ClassPathResource
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.data.redis.core.script.DefaultRedisScript
 import org.springframework.stereotype.Repository
+import java.time.Duration
 
 
 enum class RefreshTokenRotationResult {
@@ -32,25 +33,26 @@ class RefreshTokenRepository(
         }
     }
 
-    fun save(memberId: Long, tokenId: String) {
+    fun save(memberId: Long, tokenId: String, ttl: Duration = authPolicyConfig.refreshTokenTTL) {
         redisTemplate.opsForValue().set(
             key(memberId),
             tokenId,
-            authPolicyConfig.refreshTokenTTL,
+            ttl,
         )
     }
 
     fun replaceIfMatches(
         memberId: Long,
         currentTokenId: String,
-        nextTokenId: String
+        nextTokenId: String,
+        ttl: Duration = authPolicyConfig.refreshTokenTTL,
     ): RefreshTokenRotationResult {
         val result = redisTemplate.execute(
             ROTATE_SCRIPT,
             listOf(key(memberId)),
             currentTokenId,
             nextTokenId,
-            authPolicyConfig.refreshTokenTTL.toMillis().toString(),
+            ttl.toMillis().toString(),
         )
 
         return when (result) {
@@ -59,6 +61,10 @@ class RefreshTokenRepository(
             MISMATCHED_CODE -> RefreshTokenRotationResult.MISMATCHED
             else -> RefreshTokenRotationResult.FAILED
         }
+    }
+
+    fun delete(memberId: Long) {
+        redisTemplate.delete(key(memberId))
     }
 
     private fun key(memberId: Long): String {

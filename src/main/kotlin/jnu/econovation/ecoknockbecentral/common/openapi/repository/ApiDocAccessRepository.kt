@@ -1,4 +1,4 @@
-package jnu.econovation.ecoknockbecentral.common.openapi
+package jnu.econovation.ecoknockbecentral.common.openapi.repository
 
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.stereotype.Repository

@@ -58,6 +58,10 @@ public class JwtUtil{
     }
 
     public String generateAccessToken(MemberInfoDTO memberInfo) {
+        return generateAccessToken(memberInfo, authPolicyConfig.getAccessTokenTTL());
+    }
+
+    public String generateAccessToken(MemberInfoDTO memberInfo, Duration ttl) {
         long now = System.currentTimeMillis();
 
         return Jwts.builder()
@@ -65,12 +69,16 @@ public class JwtUtil{
                 .claim("id", memberInfo.getId())
                 .claim(TOKEN_TYPE_CLAIM, ACCESS_TOKEN_TYPE)
                 .issuedAt(new Date(now))
-                .expiration(new Date(now + authPolicyConfig.getAccessTokenTTL().toMillis()))
+                .expiration(new Date(now + ttl.toMillis()))
                 .signWith(key)
                 .compact();
     }
 
     public String generateRefreshToken(MemberInfoDTO memberInfo) {
+        return generateRefreshToken(memberInfo, authPolicyConfig.getRefreshTokenTTL());
+    }
+
+    public String generateRefreshToken(MemberInfoDTO memberInfo, Duration ttl) {
         long now = System.currentTimeMillis();
 
         return Jwts.builder()
@@ -79,7 +87,7 @@ public class JwtUtil{
                 .claim("id", memberInfo.getId())
                 .claim(TOKEN_TYPE_CLAIM, REFRESH_TOKEN_TYPE)
                 .issuedAt(new Date(now))
-                .expiration(new Date(now + authPolicyConfig.getRefreshTokenTTL().toMillis()))
+                .expiration(new Date(now + ttl.toMillis()))
                 .signWith(key)
                 .compact();
     }

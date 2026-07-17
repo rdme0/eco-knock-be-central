@@ -33,15 +33,20 @@ When relevant, check and update:
 - proto generation commands
 - Raspberry Pi deployment flow
 - current limitations or assumptions
+- guest authentication, role-based allowlist, session lifetime, and rate limit
+- AI request format, history policy, and external AI server dependency
+- latest Flyway migrations, including removals and nullable-field changes
+- OpenAPI package structure, documented endpoint summary, and Redis access toggle
+- Redis Lua scripts and the configuration values that control them
 
 ## Repository-Specific Rules
 
 1. Keep examples neutral.
    - Do not leave personal usernames or machine-specific values in examples unless the user explicitly wants them.
    - Prefer values like `pi`, `192.168.0.10`, or placeholder-style examples when documenting deploy settings.
-2. Keep Raspberry Pi deployment aligned with the real repository flow.
-   - The project builds the Docker image on the developer machine and runs it on the Pi.
-   - Do not describe Pi-local `docker build` as the default flow unless the code or scripts change.
+2. Keep deployment documentation aligned with the real repository flow.
+   - Inspect the current deploy scripts and Compose files before describing image build or runtime location.
+   - Do not claim a developer-machine build, Pi-local build, registry flow, or other deployment topology unless it is represented by the repository or explicitly decided by the user.
 3. Keep sensor details aligned with the current code.
    - If `BME680` config, I2C path, or address handling changes, update the README sections that describe them.
 4. Respect the current stage of the project.
@@ -53,3 +58,5 @@ When relevant, check and update:
 2. Keep command examples executable.
 3. When showing config examples, match `application.yaml`, `.env`, and deploy scripts as they exist now.
 4. If terminal output looks garbled because of encoding, do not assume the README must be rewritten in English. Keep the README itself in Korean unless the user says otherwise.
+5. Use Mermaid only for implemented architecture, data, authentication, or external-integration flows. Do not add diagrams for speculative roadmap items.
+6. Before finishing, verify README endpoint names, environment variables, migration versions, resource paths, and commands against the current repository.

@@ -1,6 +1,5 @@
 package jnu.econovation.ecoknockbecentral.common.security.helper;
 
-import jnu.econovation.ecoknockbecentral.common.exception.server.InternalServerException;
 import jnu.econovation.ecoknockbecentral.common.security.dto.EcoKnockUserDetails;
 import jnu.econovation.ecoknockbecentral.common.security.exception.UnauthorizedException;
 import jnu.econovation.ecoknockbecentral.common.security.util.JwtUtil;
@@ -27,16 +26,12 @@ public class JwtAuthHelper {
 
         Long memberId = jwtUtil.extractId(token);
         if (memberId == null) {
-            throw new InternalServerException(
-                    new IllegalStateException("토큰이 유효하지만 id 추출 실패")
-            );
+            throw new UnauthorizedException();
         }
 
         var memberInfo = memberService.get(memberId);
         if (memberInfo == null) {
-            throw new InternalServerException(
-                    new IllegalStateException("토큰이 유효하지만 DB에 해당 회원 정보가 없음")
-            );
+            throw new UnauthorizedException();
         }
 
         EcoKnockUserDetails userDetails = new EcoKnockUserDetails(memberInfo);
