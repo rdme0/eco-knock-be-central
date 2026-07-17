@@ -9,6 +9,7 @@ import java.util.Locale;
 import java.util.Optional;
 import jnu.econovation.ecoknockbecentral.common.exception.server.InternalServerException;
 import jnu.econovation.ecoknockbecentral.member.model.entity.Member;
+import jnu.econovation.ecoknockbecentral.member.model.vo.Role;
 import jnu.econovation.ecoknockbecentral.member.repository.MemberRepository;
 import jnu.econovation.ecoknockbecentral.wallet.model.entity.MemberWallet;
 import jnu.econovation.ecoknockbecentral.wallet.model.vo.WalletType;
@@ -65,6 +66,7 @@ public class MemberWalletService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public int createManagedWalletsForExistingMembers() {
         List<Long> memberIds = memberRepository.findAll().stream()
+                .filter(member -> member.getRole() != Role.GUEST)
                 .map(Member::getId)
                 .sorted(Comparator.naturalOrder())
                 .toList();

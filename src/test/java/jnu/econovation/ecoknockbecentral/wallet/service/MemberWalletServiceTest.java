@@ -6,6 +6,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import jakarta.persistence.EntityManager;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import jnu.econovation.ecoknockbecentral.member.model.entity.Member;
+import jnu.econovation.ecoknockbecentral.member.model.vo.Role;
 import jnu.econovation.ecoknockbecentral.member.repository.MemberRepository;
 import jnu.econovation.ecoknockbecentral.wallet.model.entity.MemberWallet;
 import jnu.econovation.ecoknockbecentral.wallet.model.vo.WalletType;
@@ -118,6 +120,18 @@ class MemberWalletServiceTest {
 
         assertThat(createdCount).isEqualTo(1);
         verify(memberWalletRepository).save(any(MemberWallet.class));
+    }
+
+    @Test
+    void excludesGuestsFromExistingMemberWalletInitialization() {
+        Member guest = mock(Member.class);
+        when(guest.getRole()).thenReturn(Role.GUEST);
+        when(memberRepository.findAll()).thenReturn(List.of(guest));
+
+        int createdCount = service.createManagedWalletsForExistingMembers();
+
+        assertThat(createdCount).isZero();
+        verifyNoInteractions(entityManager, memberWalletRepository);
     }
 
     private String randomEncryptionKey() {
