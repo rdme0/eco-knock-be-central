@@ -5,11 +5,13 @@ import jnu.econovation.ecoknockbecentral.member.dto.MemberInfoDTO
 import jnu.econovation.ecoknockbecentral.member.event.MemberCreatedEvent
 import jnu.econovation.ecoknockbecentral.member.model.entity.Member
 import jnu.econovation.ecoknockbecentral.member.repository.MemberRepository
+import jnu.econovation.ecoknockbecentral.member.model.vo.Role
 import jnu.econovation.ecoknockbecentral.sso.dto.SSOMeDTO
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import kotlin.jvm.optionals.getOrNull
+import java.time.Instant
 
 @Service
 class MemberService(
@@ -36,6 +38,14 @@ class MemberService(
         return MemberInfoDTO.from(member)
     }
 
+    @Transactional
+    fun createGuest(guestExpiresAt: Instant): MemberInfoDTO {
+        val member = Member.createGuest(guestExpiresAt)
+        repository.save(member)
+
+        return MemberInfoDTO.from(member)
+    }
+
     @Transactional(readOnly = true)
     fun get(id: Long): MemberInfoDTO? {
         val entity = getEntity(id) ?: return null
@@ -58,5 +68,22 @@ class MemberService(
         return getEntity(id) ?: throw InternalServerException(
             IllegalStateException("id가 ${id}인 회원을 찾을 수 없음.")
         )
+    }
+
+    @Transactional(readOnly = true)
+    fun getExpiredGuestIds(now: Instant): List<Long> {
+        return repository.findAllByRoleAndGuestExpiresAtLessThanEqual(Role.GUEST, now)
+            .map { it.id }
+    }
+
+    @Transactional
+    fun deleteExpiredGuest(memberId: Long, now: Instant) {
+        val member = getEntity(memberId) ?: return
+
+        if (member.role != Role.GUEST || member.guestExpiresAt == null || member.guestExpiresAt.isAfter(now)) {
+            return
+        }
+
+        repository.delete(member)
     }
 }

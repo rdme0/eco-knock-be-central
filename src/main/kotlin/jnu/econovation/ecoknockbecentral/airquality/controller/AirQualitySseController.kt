@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import jnu.econovation.ecoknockbecentral.airquality.service.AirQualitySseService
-import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.SSE_RESPONSE
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.SSE_RESPONSE
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -23,6 +23,7 @@ class AirQualitySseController(
     @Operation(
         summary = "공기질 SSE 스트림 연결",
         description = "실시간 공기질 이벤트를 text/event-stream으로 구독합니다. 연결 직후 connected 이벤트와 ok 데이터를 보냅니다.",
+        security = [],
         responses = [
             ApiResponse(
                 responseCode = "200",

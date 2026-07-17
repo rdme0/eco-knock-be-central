@@ -7,4 +7,7 @@ import java.time.Duration
 data class AuthPolicyConfig(
     val accessTokenTTL: Duration,
     val refreshTokenTTL: Duration,
+    val guestSessionTTL: Duration,
+    val guestLoginRateLimit: Int,
+    val guestLoginRateLimitWindow: Duration,
 )

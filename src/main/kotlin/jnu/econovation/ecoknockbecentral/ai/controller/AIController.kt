@@ -5,14 +5,18 @@ import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jnu.econovation.ecoknockbecentral.ai.dto.aiserver.response.AIServerResponse
 import jnu.econovation.ecoknockbecentral.ai.dto.client.request.AIChatRequest
 import jnu.econovation.ecoknockbecentral.ai.service.AIService
 import jnu.econovation.ecoknockbecentral.common.dto.response.CommonResponse
 import jnu.econovation.ecoknockbecentral.common.dto.response.CommonResponse.success
-import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.UNAUTHORIZED_EXAMPLE_NAME
-import jnu.econovation.ecoknockbecentral.common.openapi.OpenApiConstants.UNAUTHORIZED_EXAMPLE_REF
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.UNAUTHORIZED_EXAMPLE_NAME
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.UNAUTHORIZED_EXAMPLE_REF
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.INTERNAL_SERVER_ERROR_EXAMPLE_NAME
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.INTERNAL_SERVER_ERROR_EXAMPLE_REF
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.ACCESS_TOKEN_SECURITY_SCHEME_NAME
 import jnu.econovation.ecoknockbecentral.common.security.dto.EcoKnockUserDetails
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -26,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/ai/chat")
 @Tag(name = "AI Chat", description = "AI 채팅 API")
+@SecurityRequirement(name = ACCESS_TOKEN_SECURITY_SCHEME_NAME)
 class AIController(
     private val service: AIService,
 ) {
@@ -46,6 +51,17 @@ class AIController(
                     examples = [ExampleObject(
                         name = UNAUTHORIZED_EXAMPLE_NAME,
                         ref = UNAUTHORIZED_EXAMPLE_REF,
+                    )],
+                )],
+            ),
+            ApiResponse(
+                responseCode = "500",
+                description = "AI 서버 통신 또는 내부 처리 오류",
+                content = [Content(
+                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    examples = [ExampleObject(
+                        name = INTERNAL_SERVER_ERROR_EXAMPLE_NAME,
+                        ref = INTERNAL_SERVER_ERROR_EXAMPLE_REF,
                     )],
                 )],
             ),
