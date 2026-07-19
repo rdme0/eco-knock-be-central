@@ -36,6 +36,9 @@ public enum ErrorCode {
     MEMBER_DUPLICATED_FIELD(Domain.MEMBER, HttpStatus.CONFLICT, 1, "이미 사용중인 %s 입니다."),
     ALREADY_COMPLETED_REGISTRATION(Domain.MEMBER, HttpStatus.CONFLICT, 2, "이미 가입이 완료된 회원입니다."),
 
+    // --- WALLET ---
+    WALLET_NOT_FOUND(Domain.WALLET, HttpStatus.NOT_FOUND, 1, "활성 보상 지갑을 찾을 수 없습니다."),
+
     // --- AIR_QUALITY ---
     BAD_FROM_TO(Domain.AIR_QUALITY, HttpStatus.BAD_REQUEST, 1, "from은 to보다 이전이어야 합니다."),
     BAD_AIR_QUALITY_RESOLUTION(Domain.AIR_QUALITY, HttpStatus.BAD_REQUEST, 2, "Air Quality Resolution은 [ %s ] 만 가능합니다.".formatted(AirQualityResolution.supportedCodes())),

@@ -6,5 +6,6 @@ public enum Domain {
     SSO,
     SECURITY,
     MEMBER,
+    WALLET,
     AIR_QUALITY
 }
