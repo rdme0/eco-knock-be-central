@@ -15,6 +15,7 @@ def jwtVersion = '0.13.0'
 def grpcVersion = '1.80.0'
 def protobufVersion = '4.34.1'
 def springdocVersion = '3.0.3'
+def web3jVersion = '5.0.3'
 
 group = 'jnu.econovation'
 version = '0.0.1-SNAPSHOT'
@@ -105,6 +106,9 @@ dependencies {
 
     //jackson-hibernate
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+    //web3j
+    implementation "org.web3j:crypto:${web3jVersion}"
 }
 
 protobuf {
