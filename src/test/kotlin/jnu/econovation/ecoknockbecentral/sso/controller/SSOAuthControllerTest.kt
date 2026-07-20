@@ -30,6 +30,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import tools.jackson.databind.json.JsonMapper
 import java.time.Duration
 import java.time.LocalDateTime
+import java.time.ZoneOffset
 import java.util.Base64
 
 class SSOAuthControllerTest {
@@ -173,8 +174,8 @@ class SSOAuthControllerTest {
             16,
             "AM",
             listOf("USER"),
-            LocalDateTime.now().minusHours(2),
-            LocalDateTime.now().minusHours(1),
+            LocalDateTime.now(ZoneOffset.UTC).minusHours(2),
+            LocalDateTime.now(ZoneOffset.UTC).minusHours(1),
         )
         val passportJson = """{
             "memberId": ${passport.memberId},
