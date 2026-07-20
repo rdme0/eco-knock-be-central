@@ -249,6 +249,8 @@ PROD_POSTGRES_PASSWORD=replace-with-prod-password
 PROD_GRAFANA_HOST=https://monitoring.replace-with-server.example.com
 ```
 
+관리자 마스터 로그인 대상 회원은 환경 변수가 아니라 `application.yaml`의 `security.admin.sso-member-id`에 지정합니다. 해당 SSO 회원의 DB `Member.role`은 `ADMIN`이어야 합니다.
+
 ## 실행 방법
 
 proto 생성은 `compileJava`, `compileKotlin`, `bootRun` 전에 자동으로 연결됩니다.
@@ -424,7 +426,9 @@ sequenceDiagram
 | 인증 | `GET` | `/sso/login` | SSO 로그인 시작 |
 | 인증 | `GET` | `/sso/callback` | SSO 콜백 처리 |
 | 인증 | `POST` | `/auth/guest` | 게스트 회원 생성 및 세션 쿠키 발급 |
+| 인증 | `POST` | `/auth/admin` | 관리자 마스터 비밀번호로 관리자 쿠키 발급 |
 | 인증 | `POST` | `/auth/reissue` | refresh token으로 access token 재발급 |
+| 인증 | `POST` | `/auth/logout` | 현재 refresh 세션 폐기 및 인증 쿠키 삭제 |
 | 공기질 | `GET` | `/air-quality/timeseries` | 공기질 timeseries 조회 |
 | 공기질 | `GET` | `/air-quality/timeseries/history` | 공기질 과거 데이터 조회 |
 | 공기질 | `GET` | `/air-quality/stream` | 공기질 SSE 스트림 |
@@ -463,6 +467,8 @@ flowchart TD
 ```
 
 - 일반 사용자와 관리자는 access/refresh JWT를 HttpOnly 쿠키로 사용합니다.
+- CSR 관리자는 `POST /auth/admin`에 JSON 본문 `{"password":"..."}`을 보내 설정된 관리자 회원의 access/refresh HttpOnly 쿠키를 발급받을 수 있습니다. 이후 `credentials: 'include'`로 관리자 JSON API와 회원 정보 API를 호출할 수 있습니다.
+- `POST /auth/logout`은 인증 없이 호출할 수 있으며 access/refresh 쿠키를 삭제합니다. 유효한 refresh token의 jti가 Redis에 저장된 현재 세션과 일치할 때만 해당 세션도 폐기하므로, 오래된 token으로 최신 세션을 종료하지 않습니다.
 - 게스트는 `POST /auth/guest`로 `GUEST` 회원과 session cookie를 발급받습니다.
 - 게스트 세션은 최초 발급 시각부터 최대 24시간만 유효합니다. 재발급해도 만료 시각은 연장되지 않습니다.
 - 게스트 로그인은 IP별 시간당 5회로 제한되며 Redis Lua script로 횟수를 원자적으로 증가시킵니다.
@@ -479,9 +485,9 @@ flowchart TD
 - API 문서 공개 상태 조회·변경
 - 자동제어 정책 조회·수정
 - 자동제어 활성화 상태 변경
-- SSO 로그인 또는 `ADMIN_MASTER_PASSWORD` 기반 마스터 비밀번호 로그인
+- SSO 로그인 또는 `ADMIN_MASTER_PASSWORD` 기반 관리자 로그인(SSR 폼: `POST /admin/login/master`, CSR JSON: `POST /auth/admin`)
 
-SSO 로그인 후 관리자 접근 여부는 SSO role이 아니라 프로젝트 DB의 `Member.role = ADMIN`으로 판단합니다. 최초 관리자는 운영자가 DB에서 role을 부여해야 합니다.
+SSO 로그인 후 관리자 접근 여부는 SSO role이 아니라 프로젝트 DB의 `Member.role = ADMIN`으로 판단합니다. 마스터 비밀번호 로그인은 `security.admin.sso-member-id`로 지정한 DB 회원을 사용하며, 해당 회원은 운영자가 `ADMIN` 역할로 설정해야 합니다.
 
 ## API 문서
 
@@ -538,6 +544,7 @@ Grafana는 datasource와 `Eco Knock Performance` dashboard를 자동 provisionin
 Redis script는 `src/main/resources/redis`에 둡니다.
 
 - [`rotate-refresh-token.lua`](./src/main/resources/redis/rotate-refresh-token.lua): refresh token jti 비교와 새 jti 저장을 원자적으로 수행
+- [`delete-refresh-token-if-matches.lua`](./src/main/resources/redis/delete-refresh-token-if-matches.lua): refresh token jti가 현재 저장값과 일치할 때만 세션을 원자적으로 삭제
 - [`increment-guest-login-rate-limit.lua`](./src/main/resources/redis/increment-guest-login-rate-limit.lua): IP별 게스트 로그인 횟수 증가와 TTL 설정을 원자적으로 수행
 
 ## 제한사항
