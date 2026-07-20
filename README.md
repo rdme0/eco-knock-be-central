@@ -426,9 +426,10 @@ sequenceDiagram
 | 인증 | `GET` | `/sso/login` | SSO 로그인 시작 |
 | 인증 | `GET` | `/sso/callback` | SSO 콜백 처리 |
 | 인증 | `POST` | `/auth/guest` | 게스트 회원 생성 및 세션 쿠키 발급 |
-| 인증 | `POST` | `/auth/admin` | 관리자 마스터 비밀번호로 관리자 쿠키 발급 |
+| 인증 | `POST` | `/auth/admin` | 관리자 마스터 비밀번호로 ID 0 시스템 관리자 access/refresh 쿠키 발급 |
 | 인증 | `POST` | `/auth/reissue` | refresh token으로 access token 재발급 |
 | 인증 | `POST` | `/auth/logout` | 현재 refresh 세션 폐기 및 인증 쿠키 삭제 |
+| 회원 | `GET` | `/profile` | 현재 로그인 회원의 역할·기수·이름·활동 상태 조회 |
 | 공기질 | `GET` | `/air-quality/timeseries` | 공기질 timeseries 조회 |
 | 공기질 | `GET` | `/air-quality/timeseries/history` | 공기질 과거 데이터 조회 |
 | 공기질 | `GET` | `/air-quality/stream` | 공기질 SSE 스트림 |
@@ -467,6 +468,7 @@ flowchart TD
 ```
 
 - 일반 사용자와 관리자는 access/refresh JWT를 HttpOnly 쿠키로 사용합니다.
+- `GET /profile`은 access token으로 인증한 일반 회원 또는 관리자 회원의 `role`, `cohort`, `name`, `activeStatus`를 반환합니다.
 - SSO 로그인은 `sso.login-page-base-url`의 로그인 화면으로 항상 `client-type=app`을 전달해 시작합니다. 로그인 완료 후 auth-econovation은 등록된 `/sso/callback` 주소에 `accessToken` 쿼리를 전달하고, 백엔드는 `sso.gateway-passport-url`로 `Authorization: Bearer <accessToken>`을 전송합니다. Gateway가 검증 후 내부 `/sso/passport`에 Passport를 주입하면 자체 access/refresh 쿠키를 발급합니다. callback의 `refreshToken`, `accessExpiredTime`은 사용하거나 저장하지 않습니다. callback 응답은 `Referrer-Policy: no-referrer`를 설정해 SSO 토큰이 최종 이동 요청의 Referer에 전달되지 않게 합니다.
 - Passport 연동은 [JNU-econovation/auth-common](https://github.com/JNU-econovation/auth-common)을 참고했지만, 현재 프로젝트의 Spring Boot 4와 호환되지 않아 필요한 코드를 프로젝트 내부에 직접 이식해 사용합니다. 따라서 해당 외부 라이브러리는 활성 의존성으로 사용하지 않습니다.
 - Passport의 `roles`는 프로젝트의 `Member.role`로 변환하지 않으며, 관리자 접근 여부는 프로젝트 DB의 `Member.role`로 판단합니다.
