@@ -33,9 +33,6 @@ security:
     guest-login-rate-limit-window: 1h
   admin:
     master-password: ${ADMIN_MASTER_PASSWORD}
-    master-token-ttl: 1h
-  test-auth:
-    sso-member-id: 0
   jwt:
     secret-key: ${JWT_SECRET_KEY}
   aes256:
@@ -59,7 +56,8 @@ embedded:
     timeout: 3s
 
 sso:
-  base-url: https://auth.econovation.kr
+  login-page-base-url: https://auth-econovation-fe-abc.vercel.app
+  gateway-passport-url: https://api.econovation.kr/api/eco-knock
   client-id: ${SSO_CLIENT_ID}
 
 whozin:

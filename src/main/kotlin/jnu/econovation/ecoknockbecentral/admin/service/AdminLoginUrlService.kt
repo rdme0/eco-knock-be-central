@@ -1,4 +1,4 @@
-package jnu.econovation.ecoknockbecentral.common.security.service
+package jnu.econovation.ecoknockbecentral.admin.service
 
 import jakarta.servlet.http.HttpServletRequest
 import jnu.econovation.ecoknockbecentral.sso.resolver.SSORedirectUrlResolver

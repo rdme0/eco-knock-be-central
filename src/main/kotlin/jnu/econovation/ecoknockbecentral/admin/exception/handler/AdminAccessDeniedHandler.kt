@@ -1,4 +1,4 @@
-package jnu.econovation.ecoknockbecentral.common.security.controller
+package jnu.econovation.ecoknockbecentral.admin.exception.handler
 
 import jnu.econovation.ecoknockbecentral.overview.controller.AdminOverviewShortcutController
 import org.springframework.core.Ordered
@@ -11,7 +11,7 @@ import org.springframework.web.servlet.ModelAndView
 
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @ControllerAdvice(assignableTypes = [AdminOverviewShortcutController::class])
-class AdminAccessDeniedAdvice {
+class AdminAccessDeniedHandler {
 
     @ExceptionHandler(AuthorizationDeniedException::class)
     fun handleAuthorizationDenied(): ModelAndView {

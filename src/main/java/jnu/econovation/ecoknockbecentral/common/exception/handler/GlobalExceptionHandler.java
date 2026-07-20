@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import jnu.econovation.ecoknockbecentral.auth.core.passport.PassportException;
 import jnu.econovation.ecoknockbecentral.common.dto.response.CommonResponse;
 import jnu.econovation.ecoknockbecentral.common.exception.client.ClientException;
 import jnu.econovation.ecoknockbecentral.common.exception.constants.ErrorCode;
@@ -169,6 +170,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         log.warn("클라이언트 예외 발생: Code={}, Message={}", e.getErrorCode().getCode(), e.getMessage());
 
         return handleClientExceptionInternal(e);
+    }
+
+    @ExceptionHandler(PassportException.class)
+    public ResponseEntity<Object> handlePassportException(PassportException e) {
+        ErrorCode errorCode = e.getHttpStatus() == HttpStatus.BAD_REQUEST
+                ? ErrorCode.INVALID_INPUT_VALUE
+                : ErrorCode.UNAUTHORIZED;
+
+        log.warn("Passport 예외 발생: Status={}, Message={}", e.getHttpStatus(), e.getMessage());
+
+        return handleExceptionInternal(errorCode, e.getMessage());
     }
 
     @ExceptionHandler(BeanInstantiationException.class)

@@ -5,14 +5,12 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
-import io.swagger.v3.oas.annotations.security.SecurityRequirements
 import io.swagger.v3.oas.annotations.tags.Tag
 import jnu.econovation.ecoknockbecentral.common.dto.response.CommonResponse
 import jnu.econovation.ecoknockbecentral.common.dto.response.CommonResponse.success
 import jnu.econovation.ecoknockbecentral.common.openapi.dto.ApiDocAccessResponse
 import jnu.econovation.ecoknockbecentral.common.openapi.dto.UpdateApiDocAccessRequest
 import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.ACCESS_TOKEN_SECURITY_SCHEME_NAME
-import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.ADMIN_MASTER_TOKEN_SECURITY_SCHEME_NAME
 import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.BAD_DATA_SYNTAX_EXAMPLE_NAME
 import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.BAD_DATA_SYNTAX_EXAMPLE_REF
 import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.UNAUTHORIZED_EXAMPLE_NAME
@@ -30,12 +28,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/admin/api-docs-access")
 @PreAuthorize("hasRole('ADMIN')")
 @Tag(name = "Admin", description = "관리자 JSON API")
-@SecurityRequirements(
-    value = [
-        SecurityRequirement(name = ACCESS_TOKEN_SECURITY_SCHEME_NAME),
-        SecurityRequirement(name = ADMIN_MASTER_TOKEN_SECURITY_SCHEME_NAME),
-    ]
-)
+@SecurityRequirement(name = ACCESS_TOKEN_SECURITY_SCHEME_NAME)
 class AdminApiDocAccessController(
     private val apiDocAccessService: ApiDocAccessService,
 ) {

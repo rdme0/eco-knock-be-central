@@ -59,7 +59,7 @@ flowchart LR
 - `1m`, `5m`, `15m`, `1h`, `4h`, `1d` 공기질 materialized view와 주기적 refresh
 - 공기질 timeseries·history 조회 및 SSE 실시간 스트림
 - 조도와 최근 공기질을 기준으로 한 공기청정기 자동제어
-- auth-econovation WEB SSO 로그인과 HttpOnly JWT 쿠키 인증
+- auth-econovation APP SSO 로그인과 HttpOnly JWT 쿠키 인증
 - `GUEST` 게스트 로그인과 24시간 하드 만료 세션
 - IP별 시간당 5회 게스트 로그인 제한
 - 게스트가 접근할 수 있는 조회 API allowlist
@@ -193,7 +193,7 @@ src/main/resources
 | `WALLET_ENCRYPTION_KEY` | 지갑 개인키 암호화에 사용할 Base64 인코딩된 32바이트 키 |
 | `SEPOLIA_RPC_URL` | Ethereum Sepolia 네트워크 조회에 사용할 RPC URL |
 | `SEPOLIA_KRT_TOKEN_ADDRESS` | Ethereum Sepolia에 배포된 KRT 컨트랙트 주소 |
-| `SSO_CLIENT_ID` | auth-econovation에 등록된 WEB client id |
+| `SSO_CLIENT_ID` | auth-econovation에 등록된 APP client id (`sso.login-page-base-url`은 로그인 화면, `sso.gateway-passport-url`은 Gateway Passport 검증 주소) |
 | `WHOZIN_TOKEN` | Whozin 공개 회원 API Bearer token |
 | `ADMIN_MASTER_PASSWORD` | 관리자 마스터 비밀번호 및 Grafana 비밀번호 |
 | `EMBEDDED_SERVER_HOST` | 임베디드 gRPC 서버 host |
@@ -248,6 +248,8 @@ PROD_POSTGRES_USERNAME=postgres
 PROD_POSTGRES_PASSWORD=replace-with-prod-password
 PROD_GRAFANA_HOST=https://monitoring.replace-with-server.example.com
 ```
+
+관리자 마스터 로그인은 애플리케이션 시작 시 생성·초기화되는 시스템 회원(`Member.id=0`, `ssoMemberId=0`, `role=ADMIN`)을 사용합니다. 별도 SSO 회원 ID 설정은 필요하지 않습니다.
 
 ## 실행 방법
 
@@ -424,7 +426,10 @@ sequenceDiagram
 | 인증 | `GET` | `/sso/login` | SSO 로그인 시작 |
 | 인증 | `GET` | `/sso/callback` | SSO 콜백 처리 |
 | 인증 | `POST` | `/auth/guest` | 게스트 회원 생성 및 세션 쿠키 발급 |
+| 인증 | `POST` | `/auth/admin` | 관리자 마스터 비밀번호로 ID 0 시스템 관리자 access/refresh 쿠키 발급 |
 | 인증 | `POST` | `/auth/reissue` | refresh token으로 access token 재발급 |
+| 인증 | `POST` | `/auth/logout` | 현재 refresh 세션 폐기 및 인증 쿠키 삭제 |
+| 회원 | `GET` | `/profile` | 현재 로그인 회원의 역할·기수·이름·활동 상태 조회 |
 | 공기질 | `GET` | `/air-quality/timeseries` | 공기질 timeseries 조회 |
 | 공기질 | `GET` | `/air-quality/timeseries/history` | 공기질 과거 데이터 조회 |
 | 공기질 | `GET` | `/air-quality/stream` | 공기질 SSE 스트림 |
@@ -463,6 +468,12 @@ flowchart TD
 ```
 
 - 일반 사용자와 관리자는 access/refresh JWT를 HttpOnly 쿠키로 사용합니다.
+- `GET /profile`은 access token으로 인증한 일반 회원 또는 관리자 회원의 `role`, `cohort`, `name`, `activeStatus`를 반환합니다.
+- SSO 로그인은 `sso.login-page-base-url`의 로그인 화면으로 항상 `client-type=app`을 전달해 시작합니다. 로그인 완료 후 auth-econovation은 등록된 `/sso/callback` 주소에 `accessToken` 쿼리를 전달하고, 백엔드는 `sso.gateway-passport-url`로 `Authorization: Bearer <accessToken>`을 전송합니다. Gateway가 검증 후 내부 `/sso/passport`에 Passport를 주입하면 자체 access/refresh 쿠키를 발급합니다. callback의 `refreshToken`, `accessExpiredTime`은 사용하거나 저장하지 않습니다. callback 응답은 `Referrer-Policy: no-referrer`를 설정해 SSO 토큰이 최종 이동 요청의 Referer에 전달되지 않게 합니다.
+- Passport 연동은 [JNU-econovation/auth-common](https://github.com/JNU-econovation/auth-common)을 참고했지만, 현재 프로젝트의 Spring Boot 4와 호환되지 않아 필요한 코드를 프로젝트 내부에 직접 이식해 사용합니다. 따라서 해당 외부 라이브러리는 활성 의존성으로 사용하지 않습니다.
+- Passport의 `roles`는 프로젝트의 `Member.role`로 변환하지 않으며, 관리자 접근 여부는 프로젝트 DB의 `Member.role`로 판단합니다.
+- CSR 관리자는 `POST /auth/admin`에 JSON 본문 `{"password":"..."}`을 보내 시스템 관리자 회원의 access/refresh HttpOnly 쿠키를 발급받을 수 있습니다. 이후 `credentials: 'include'`로 관리자 JSON API와 회원 정보 API를 호출할 수 있습니다.
+- `POST /auth/logout`은 인증 없이 호출할 수 있으며 access/refresh 쿠키를 삭제합니다. 유효한 refresh token의 jti가 Redis에 저장된 현재 세션과 일치할 때만 해당 세션도 폐기하므로, 오래된 token으로 최신 세션을 종료하지 않습니다.
 - 게스트는 `POST /auth/guest`로 `GUEST` 회원과 session cookie를 발급받습니다.
 - 게스트 세션은 최초 발급 시각부터 최대 24시간만 유효합니다. 재발급해도 만료 시각은 연장되지 않습니다.
 - 게스트 로그인은 IP별 시간당 5회로 제한되며 Redis Lua script로 횟수를 원자적으로 증가시킵니다.
@@ -479,9 +490,9 @@ flowchart TD
 - API 문서 공개 상태 조회·변경
 - 자동제어 정책 조회·수정
 - 자동제어 활성화 상태 변경
-- SSO 로그인 또는 `ADMIN_MASTER_PASSWORD` 기반 마스터 비밀번호 로그인
+- SSO 로그인 또는 `ADMIN_MASTER_PASSWORD` 기반 관리자 로그인(SSR 폼: `POST /admin/login/master`, CSR JSON: `POST /auth/admin`)
 
-SSO 로그인 후 관리자 접근 여부는 SSO role이 아니라 프로젝트 DB의 `Member.role = ADMIN`으로 판단합니다. 최초 관리자는 운영자가 DB에서 role을 부여해야 합니다.
+SSO 로그인 후 관리자 접근 여부는 SSO role이 아니라 프로젝트 DB의 `Member.role = ADMIN`으로 판단합니다. 마스터 비밀번호 로그인은 애플리케이션 시작 시 초기화되는 ID 0 시스템 관리자 회원을 사용합니다.
 
 ## API 문서
 
@@ -538,6 +549,7 @@ Grafana는 datasource와 `Eco Knock Performance` dashboard를 자동 provisionin
 Redis script는 `src/main/resources/redis`에 둡니다.
 
 - [`rotate-refresh-token.lua`](./src/main/resources/redis/rotate-refresh-token.lua): refresh token jti 비교와 새 jti 저장을 원자적으로 수행
+- [`delete-refresh-token-if-matches.lua`](./src/main/resources/redis/delete-refresh-token-if-matches.lua): refresh token jti가 현재 저장값과 일치할 때만 세션을 원자적으로 삭제
 - [`increment-guest-login-rate-limit.lua`](./src/main/resources/redis/increment-guest-login-rate-limit.lua): IP별 게스트 로그인 횟수 증가와 TTL 설정을 원자적으로 수행
 
 ## 제한사항
