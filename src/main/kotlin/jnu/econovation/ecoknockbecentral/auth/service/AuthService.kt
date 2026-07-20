@@ -32,6 +32,7 @@ class AuthService(
 ) {
     companion object {
         private val logger = KotlinLogging.logger {}
+        private const val SYSTEM_ADMIN_MEMBER_ID = 0L
     }
 
     fun reissue(refreshToken: String?): AuthTokenDTO {
@@ -118,7 +119,7 @@ class AuthService(
             throw BadAdminMasterPasswordException()
         }
 
-        val memberInfo = memberService.getBySSOMemberId(adminConfig.ssoMemberId)
+        val memberInfo = memberService.get(SYSTEM_ADMIN_MEMBER_ID)
             ?: throw BadDataMeaningException("관리자 인증 대상 회원을 찾을 수 없습니다.")
 
         if (memberInfo.role != Role.ADMIN) {

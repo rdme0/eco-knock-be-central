@@ -4,5 +4,4 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 @ConfigurationProperties(prefix = "security.admin")
 data class AdminConfig(
     val masterPassword: String,
-    val ssoMemberId: Long,
 )

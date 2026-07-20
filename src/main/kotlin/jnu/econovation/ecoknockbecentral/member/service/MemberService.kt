@@ -54,13 +54,6 @@ class MemberService(
     }
 
     @Transactional(readOnly = true)
-    fun getBySSOMemberId(ssoMemberId: Long): MemberInfoDTO? {
-        val entity = repository.findBySsoMemberId(ssoMemberId) ?: return null
-
-        return MemberInfoDTO.from(entity)
-    }
-
-    @Transactional(readOnly = true)
     fun getEntity(id: Long): Member? = repository.findById(id).getOrNull()
 
     @Transactional(readOnly = true)

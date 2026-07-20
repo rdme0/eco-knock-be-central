@@ -33,7 +33,6 @@ security:
     guest-login-rate-limit-window: 1h
   admin:
     master-password: ${ADMIN_MASTER_PASSWORD}
-    sso-member-id: 0
   jwt:
     secret-key: ${JWT_SECRET_KEY}
   aes256:
