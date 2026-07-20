@@ -57,7 +57,8 @@ embedded:
     timeout: 3s
 
 sso:
-  base-url: https://auth.econovation.kr
+  login-page-base-url: https://auth-econovation-fe-abc.vercel.app
+  gateway-passport-url: https://api.econovation.kr/api/eco-knock
   client-id: ${SSO_CLIENT_ID}
 
 whozin:

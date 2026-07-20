@@ -93,6 +93,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/admin", "/admin/").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/sso/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/sso/callback").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/sso/passport").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/reissue").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/logout").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/guest").permitAll()

@@ -8,7 +8,7 @@ import jnu.econovation.ecoknockbecentral.member.service.MemberService
 import jnu.econovation.ecoknockbecentral.sso.client.SSOAuthClient
 import jnu.econovation.ecoknockbecentral.sso.dto.SSOAuthResultDTO
 import jnu.econovation.ecoknockbecentral.sso.dto.SSOMeDTO
-import jnu.econovation.ecoknockbecentral.sso.dto.response.SSOMeResponse
+import jnu.econovation.ecoknockbecentral.sso.dto.response.SSOPassportResponse
 import jnu.econovation.ecoknockbecentral.sso.exception.BadSSOTokenException
 import org.springframework.stereotype.Service
 
@@ -27,7 +27,7 @@ class SSOAuthService(
             throw BadSSOTokenException()
         }
 
-        val response: SSOMeResponse = ssoAuthClient.getMe(ssoAccessToken)
+        val response: SSOPassportResponse = ssoAuthClient.getPassport(ssoAccessToken)
         val memberInfo = memberService.getOrSaveFromSSO(dto = SSOMeDTO.from(response))
         val accessToken = jwtUtil.generateAccessToken(memberInfo)
         val refreshToken = jwtUtil.generateRefreshToken(memberInfo)

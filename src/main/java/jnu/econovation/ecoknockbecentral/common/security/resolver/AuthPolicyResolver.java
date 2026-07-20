@@ -13,6 +13,7 @@ public class AuthPolicyResolver {
     private final List<AuthRule> rules = List.of(
             AuthRule.skip("/sso/login", HttpMethod.GET),
             AuthRule.skip("/sso/callback", HttpMethod.GET),
+            AuthRule.skip("/sso/passport", HttpMethod.POST),
             AuthRule.skip("/auth/reissue", HttpMethod.POST),
             AuthRule.skip("/auth/logout", HttpMethod.POST),
             AuthRule.skip("/auth/guest", HttpMethod.POST),

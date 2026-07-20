@@ -4,6 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties(prefix = "sso")
 data class SSOConfig(
-    val baseUrl: String,
+    val loginPageBaseUrl: String,
+    val gatewayPassportUrl: String,
     val clientId: String
 )
