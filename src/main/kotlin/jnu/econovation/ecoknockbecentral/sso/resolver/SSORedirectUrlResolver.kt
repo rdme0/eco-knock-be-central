@@ -31,7 +31,7 @@ class SSORedirectUrlResolver(
     fun resolveAdmin(rawRedirectUrl: String?): String {
         val normalizedUrl = normalizeOrThrow(rawRedirectUrl)
 
-        if (!isAllowed(normalizedUrl, config.allowedAdminOrigins())) {
+        if (!isAllowed(normalizedUrl, config.allowedAdminOrigins() + config.adminOrigin())) {
             logger.warn { "유효하지 않은 admin redirect url, raw -> $rawRedirectUrl, normalized -> $normalizedUrl" }
             throw BadRedirectUrlException()
         }
