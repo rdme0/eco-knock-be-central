@@ -7,3 +7,15 @@ import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.GetMapping
 
+@Controller
+@Hidden
+class AdminHomeController(
+    private val grafanaConfig: GrafanaConfig,
+) {
+    @GetMapping("/admin", "/admin/")
+    @PreAuthorize("hasRole('ADMIN')")
+    fun home(model: Model): String {
+        model.addAttribute("grafanaUrl", grafanaConfig.url)
+        return "admin/index"
+    }
+}
