@@ -1,6 +1,7 @@
 package jnu.econovation.ecoknockbecentral.overview.controller
 
 import jnu.econovation.ecoknockbecentral.EcoKnockBeCentralApplication
+import jnu.econovation.ecoknockbecentral.admin.config.AdminConfig
 import jnu.econovation.ecoknockbecentral.admin.config.GrafanaConfig
 import jnu.econovation.ecoknockbecentral.auth.constant.AuthConstant.ACCESS_TOKEN
 import jnu.econovation.ecoknockbecentral.auth.constant.AuthConstant.REFRESH_TOKEN
@@ -17,23 +18,21 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
-import org.springframework.http.HttpHeaders
-import org.springframework.http.HttpMethod
-import org.springframework.http.HttpStatus
-import org.springframework.http.MediaType
-import org.springframework.http.ResponseEntity
+import org.springframework.http.*
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.TestConstructor
+import org.springframework.test.context.TestPropertySource
 import org.springframework.web.client.RestClient
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 @SpringBootTest(
     classes = [EcoKnockBeCentralApplication::class],
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 @ActiveProfiles("dev")
+@TestPropertySource(properties = ["security.admin.sso-member-id=209902010001"])
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
 class AdminOverviewShortcutControllerE2ETest(
     @param:LocalServerPort
@@ -41,6 +40,7 @@ class AdminOverviewShortcutControllerE2ETest(
     private val memberRepository: MemberRepository,
     private val jwtUtil: JwtUtil,
     private val jdbcTemplate: JdbcTemplate,
+    private val adminConfig: AdminConfig,
     private val grafanaConfig: GrafanaConfig,
 ) {
     private val restClient: RestClient = RestClient.builder()
@@ -88,8 +88,9 @@ class AdminOverviewShortcutControllerE2ETest(
     }
 
     @Test
-    @DisplayName("마스터 비밀번호가 맞으면 관리자 전용 쿠키를 발급하고 관리자 화면으로 이동한다")
-    fun masterPasswordLoginIssuesAdminCookie() {
+    @DisplayName("마스터 비밀번호가 맞으면 관리자 인증 쿠키를 발급하고 관리자 화면으로 이동한다")
+    fun masterPasswordLoginIssuesAuthCookies() {
+        saveMember(209902010001, promoteToAdmin = true)
         val response = postForm(
             path = "/admin/login/master",
             body = adminMasterPasswordFormBody(),
@@ -98,7 +99,9 @@ class AdminOverviewShortcutControllerE2ETest(
         assertThat(response.statusCode).isEqualTo(HttpStatus.FOUND)
         assertThat(response.headers.location.toString()).endsWith("/admin")
         assertThat(response.headers[HttpHeaders.SET_COOKIE])
-            .anyMatch { it.startsWith("adminMasterToken=") }
+            .anyMatch { it.startsWith("$ACCESS_TOKEN=") }
+        assertThat(response.headers[HttpHeaders.SET_COOKIE])
+            .anyMatch { it.startsWith("$REFRESH_TOKEN=") }
     }
 
     @Test
@@ -123,22 +126,20 @@ class AdminOverviewShortcutControllerE2ETest(
 
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         assertThat(response.headers[HttpHeaders.SET_COOKIE].orEmpty())
-            .noneMatch { it.startsWith("adminMasterToken=") }
-        assertThat(response.body).contains("마스터 비밀번호가 올바르지 않습니다.")
+            .noneMatch { it.startsWith("$ACCESS_TOKEN=") || it.startsWith("$REFRESH_TOKEN=") }
+        assertThat(response.body).contains("관리자 로그인 정보를 확인할 수 없습니다.")
     }
 
     @Test
-    @DisplayName("마스터 비밀번호가 맞으면 테스트 계정의 일반 인증 쿠키를 발급한다")
-    fun masterPasswordIssuesTestAuthCookies() {
-        saveMember(209902010001, promoteToAdmin = false)
-
+    @DisplayName("마스터 비밀번호가 맞으면 관리자 계정의 일반 인증 쿠키를 발급한다")
+    fun masterPasswordIssuesAdminAuthCookies() {
+        saveMember(209902010001, promoteToAdmin = true)
         val response = postJson(
-            path = "/auth/test-token",
+            path = "/auth/admin",
             body = adminMasterPasswordJsonBody(),
         )
 
-        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
-        assertThat(response.body).contains("\"isSuccess\":true")
+        assertThat(response.statusCode).isEqualTo(HttpStatus.NO_CONTENT)
         assertThat(response.headers[HttpHeaders.SET_COOKIE])
             .anyMatch { it.startsWith("$ACCESS_TOKEN=") }
         assertThat(response.headers[HttpHeaders.SET_COOKIE])
@@ -146,12 +147,10 @@ class AdminOverviewShortcutControllerE2ETest(
     }
 
     @Test
-    @DisplayName("테스트 인증 쿠키 발급은 마스터 비밀번호가 틀리면 실패한다")
-    fun wrongMasterPasswordDoesNotIssueTestAuthCookies() {
-        saveMember(209902010001, promoteToAdmin = false)
-
+    @DisplayName("관리자 인증 쿠키 발급은 마스터 비밀번호가 틀리면 실패한다")
+    fun wrongMasterPasswordDoesNotIssueAdminAuthCookies() {
         val response = postJson(
-            path = "/auth/test-token",
+            path = "/auth/admin",
             body = """{"password":"wrong-password"}""",
         )
 
@@ -161,12 +160,66 @@ class AdminOverviewShortcutControllerE2ETest(
     }
 
     @Test
-    @DisplayName("마스터 관리자 쿠키만으로 default overview shortcut 관리자 화면에 접근할 수 있다")
-    fun masterCookieCanOpenOverviewShortcutPage() {
+    @DisplayName("관리자 마스터 로그인 API는 관리자 쿠키를 발급한다")
+    fun adminMasterLoginApiIssuesAdminCookie() {
+        saveMember(209902010001, promoteToAdmin = true)
+        val response = postJson(
+            path = "/auth/admin",
+            body = adminMasterPasswordJsonBody(),
+        )
+
+        assertThat(response.statusCode).isEqualTo(HttpStatus.NO_CONTENT)
+        assertThat(response.headers[HttpHeaders.SET_COOKIE])
+            .anyMatch { it.startsWith("$ACCESS_TOKEN=") }
+        assertThat(response.headers[HttpHeaders.SET_COOKIE])
+            .anyMatch { it.startsWith("$REFRESH_TOKEN=") }
+    }
+
+    @Test
+    @DisplayName("관리자 마스터 로그인 API는 비밀번호가 틀리거나 누락되면 쿠키 없이 401 JSON 오류를 반환한다")
+    fun invalidOrMissingAdminMasterPasswordReturnsUnauthorized() {
+        listOf("""{"password":"wrong-password"}""", "{}").forEach { body ->
+            val response = postJson(path = "/auth/admin", body = body)
+
+            assertThat(response.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
+            assertThat(response.body).contains("\"isSuccess\":false")
+            assertThat(response.headers[HttpHeaders.SET_COOKIE].orEmpty())
+                .noneMatch { it.startsWith("$ACCESS_TOKEN=") || it.startsWith("$REFRESH_TOKEN=") }
+        }
+    }
+
+    @Test
+    @DisplayName("관리자 로그인 API 쿠키로 관리자 JSON API에 접근할 수 있다")
+    fun adminLoginApiCookieCanAccessAdminJsonApi() {
+        saveMember(209902010001, promoteToAdmin = true)
+        val loginResponse = postJson(
+            path = "/auth/admin",
+            body = adminMasterPasswordJsonBody(),
+        )
+        val accessToken = loginResponse.headers[HttpHeaders.SET_COOKIE]
+            .orEmpty()
+            .first { it.startsWith("$ACCESS_TOKEN=") }
+            .substringAfter("=")
+            .substringBefore(";")
+
+        val response = request(
+            method = HttpMethod.GET,
+            path = "/admin/api-docs-access",
+            accessToken = accessToken,
+        )
+
+        assertThat(loginResponse.statusCode).isEqualTo(HttpStatus.NO_CONTENT)
+        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
+    }
+
+    @Test
+    @DisplayName("관리자 access token으로 default overview shortcut 관리자 화면에 접근할 수 있다")
+    fun accessTokenCanOpenOverviewShortcutPage() {
+        val admin = saveMember(209902010002, promoteToAdmin = true)
         val response = request(
             method = HttpMethod.GET,
             path = "/admin/overview-shortcuts",
-            adminMasterToken = jwtUtil.generateAdminMasterToken(java.time.Duration.ofHours(1)),
+            accessToken = jwtUtil.generateAccessToken(MemberInfoDTO.from(admin)),
         )
 
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
@@ -179,12 +232,13 @@ class AdminOverviewShortcutControllerE2ETest(
     }
 
     @Test
-    @DisplayName("마스터 관리자 쿠키만으로 관리자 홈에 접근할 수 있다")
-    fun masterCookieCanOpenAdminHome() {
+    @DisplayName("관리자 access token으로 관리자 홈에 접근할 수 있다")
+    fun accessTokenCanOpenAdminHome() {
+        val admin = saveMember(209902010002, promoteToAdmin = true)
         val response = request(
             method = HttpMethod.GET,
             path = "/admin/",
-            adminMasterToken = jwtUtil.generateAdminMasterToken(java.time.Duration.ofHours(1)),
+            accessToken = jwtUtil.generateAccessToken(MemberInfoDTO.from(admin)),
         )
 
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
@@ -351,13 +405,14 @@ class AdminOverviewShortcutControllerE2ETest(
     }
 
     @Test
-    @DisplayName("관리자 로그아웃은 마스터 관리자 쿠키를 제거하고 로그인 화면으로 이동한다")
-    fun logoutRemovesMasterCookie() {
+    @DisplayName("관리자 로그아웃은 일반 인증 쿠키를 제거하고 로그인 화면으로 이동한다")
+    fun logoutRemovesAuthCookies() {
+        val admin = saveMember(209902010002, promoteToAdmin = true)
         val response = restClient.post()
             .uri("/admin/logout")
             .header(
                 HttpHeaders.COOKIE,
-                "adminMasterToken=${jwtUtil.generateAdminMasterToken(java.time.Duration.ofHours(1))}"
+                "$ACCESS_TOKEN=${jwtUtil.generateAccessToken(MemberInfoDTO.from(admin))}"
             )
             .exchange { _, response ->
                 org.springframework.http.ResponseEntity
@@ -369,7 +424,68 @@ class AdminOverviewShortcutControllerE2ETest(
         assertThat(response.statusCode).isEqualTo(HttpStatus.FOUND)
         assertThat(response.headers.location.toString()).endsWith("/admin/login")
         assertThat(response.headers[HttpHeaders.SET_COOKIE])
-            .anyMatch { it.startsWith("adminMasterToken=;") }
+            .anyMatch { it.startsWith("$ACCESS_TOKEN=;") }
+        assertThat(response.headers[HttpHeaders.SET_COOKIE])
+            .anyMatch { it.startsWith("$REFRESH_TOKEN=;") }
+    }
+
+    @Test
+    @DisplayName("CSR 로그아웃은 현재 refresh 세션을 폐기하고 인증 쿠키를 삭제한다")
+    fun csrLogoutRevokesRefreshSessionAndRemovesAuthCookies() {
+        saveMember(209902010001, promoteToAdmin = true)
+        val loginResponse = postJson("/auth/admin", adminMasterPasswordJsonBody())
+        val refreshToken = cookieValue(loginResponse, REFRESH_TOKEN)
+
+        val logoutResponse = restClient.post()
+            .uri("/auth/logout")
+            .header(HttpHeaders.COOKIE, "$REFRESH_TOKEN=$refreshToken")
+            .exchange { _, response ->
+                ResponseEntity.status(response.statusCode).headers(response.headers).build<String>()
+            }
+
+        assertThat(logoutResponse.statusCode).isEqualTo(HttpStatus.NO_CONTENT)
+        assertThat(logoutResponse.headers[HttpHeaders.SET_COOKIE])
+            .anyMatch { it.startsWith("$ACCESS_TOKEN=;") }
+        assertThat(logoutResponse.headers[HttpHeaders.SET_COOKIE])
+            .anyMatch { it.startsWith("$REFRESH_TOKEN=;") }
+
+        val reissueResponse = restClient.post()
+            .uri("/auth/reissue")
+            .header(HttpHeaders.COOKIE, "$REFRESH_TOKEN=$refreshToken")
+            .exchange { _, response -> HttpStatus.valueOf(response.statusCode.value()) }
+
+        assertThat(reissueResponse).isEqualTo(HttpStatus.UNAUTHORIZED)
+    }
+
+    @Test
+    @DisplayName("오래된 refresh token으로 로그아웃해도 최신 refresh 세션은 유지한다")
+    fun staleRefreshTokenDoesNotRevokeLatestSession() {
+        saveMember(209902010001, promoteToAdmin = true)
+        val firstLogin = postJson("/auth/admin", adminMasterPasswordJsonBody())
+        val staleRefreshToken = cookieValue(firstLogin, REFRESH_TOKEN)
+        val latestLogin = postJson("/auth/admin", adminMasterPasswordJsonBody())
+        val latestRefreshToken = cookieValue(latestLogin, REFRESH_TOKEN)
+
+        val logoutStatus = restClient.post()
+            .uri("/auth/logout")
+            .header(HttpHeaders.COOKIE, "$REFRESH_TOKEN=$staleRefreshToken")
+            .exchange { _, response -> HttpStatus.valueOf(response.statusCode.value()) }
+
+        val reissueStatus = restClient.post()
+            .uri("/auth/reissue")
+            .header(HttpHeaders.COOKIE, "$REFRESH_TOKEN=$latestRefreshToken")
+            .exchange { _, response -> HttpStatus.valueOf(response.statusCode.value()) }
+
+        assertThat(logoutStatus).isEqualTo(HttpStatus.NO_CONTENT)
+        assertThat(reissueStatus).isEqualTo(HttpStatus.OK)
+    }
+
+    private fun cookieValue(response: ResponseEntity<*>, name: String): String {
+        return response.headers[HttpHeaders.SET_COOKIE]
+            .orEmpty()
+            .first { it.startsWith("$name=") }
+            .substringAfter("=")
+            .substringBefore(";")
     }
 
     private fun saveMember(
@@ -394,21 +510,19 @@ class AdminOverviewShortcutControllerE2ETest(
         method: HttpMethod,
         path: String,
         accessToken: String? = null,
-        adminMasterToken: String? = null,
     ): ResponseEntity<String> {
         return restClient.method(method)
             .uri(path)
             .headers {
                 val cookies = listOfNotNull(
                     accessToken?.let { token -> "$ACCESS_TOKEN=$token" },
-                    adminMasterToken?.let { token -> "adminMasterToken=$token" },
                 )
                 if (cookies.isNotEmpty()) {
                     it.add(HttpHeaders.COOKIE, cookies.joinToString("; "))
                 }
             }
             .exchange { _, response ->
-                org.springframework.http.ResponseEntity
+                ResponseEntity
                     .status(response.statusCode)
                     .headers(response.headers)
                     .body(String(response.body.readAllBytes(), StandardCharsets.UTF_8))
@@ -424,7 +538,7 @@ class AdminOverviewShortcutControllerE2ETest(
             .contentType(MediaType.APPLICATION_FORM_URLENCODED)
             .body(body)
             .exchange { _, response ->
-                org.springframework.http.ResponseEntity
+                ResponseEntity
                     .status(response.statusCode)
                     .headers(response.headers)
                     .body(String(response.body.readAllBytes(), StandardCharsets.UTF_8))
@@ -432,17 +546,11 @@ class AdminOverviewShortcutControllerE2ETest(
     }
 
     private fun adminMasterPasswordFormBody(): String {
-        val password = requireNotNull(System.getenv("ADMIN_MASTER_PASSWORD")) {
-            "ADMIN_MASTER_PASSWORD is required for admin master password login E2E test"
-        }
-        return "password=${URLEncoder.encode(password, StandardCharsets.UTF_8)}"
+        return "password=${URLEncoder.encode(adminConfig.masterPassword, StandardCharsets.UTF_8)}"
     }
 
     private fun adminMasterPasswordJsonBody(): String {
-        val password = requireNotNull(System.getenv("ADMIN_MASTER_PASSWORD")) {
-            "ADMIN_MASTER_PASSWORD is required for test token E2E test"
-        }
-        return """{"password":"${escapeJson(password)}"}"""
+        return """{"password":"${escapeJson(adminConfig.masterPassword)}"}"""
     }
 
     private fun escapeJson(value: String): String {
@@ -460,7 +568,7 @@ class AdminOverviewShortcutControllerE2ETest(
             .contentType(MediaType.APPLICATION_JSON)
             .body(body)
             .exchange { _, response ->
-                org.springframework.http.ResponseEntity
+                ResponseEntity
                     .status(response.statusCode)
                     .headers(response.headers)
                     .body(String(response.body.readAllBytes(), StandardCharsets.UTF_8))
