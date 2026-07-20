@@ -25,7 +25,7 @@ class AuthServiceTest {
     private val memberService = mock<MemberService>()
     private val refreshTokenRepository = mock<RefreshTokenRepository>()
     private val guestLoginRateLimitRepository = mock<GuestLoginRateLimitRepository>()
-    private val adminConfig = AdminConfig(masterPassword = "master-password", ssoMemberId = 1L)
+    private val adminConfig = AdminConfig(masterPassword = "master-password")
     private val authPolicyConfig = AuthPolicyConfig(
         accessTokenTTL = Duration.ofHours(6),
         refreshTokenTTL = Duration.ofDays(60),
@@ -81,10 +81,10 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("올바른 관리자 마스터 비밀번호는 설정된 ADMIN 회원의 일반 토큰을 발급한다")
+    @DisplayName("올바른 관리자 마스터 비밀번호는 ID 0 ADMIN 회원의 일반 토큰을 발급한다")
     fun issuesAdminToken() {
         val admin = adminMember()
-        whenever(memberService.getBySSOMemberId(1L)).thenReturn(admin)
+        whenever(memberService.get(0L)).thenReturn(admin)
         whenever(jwtUtil.generateAccessToken(admin)).thenReturn("access")
         whenever(jwtUtil.generateRefreshToken(admin)).thenReturn("refresh")
         whenever(jwtUtil.extractTokenId("refresh")).thenReturn("refresh-id")
@@ -104,14 +104,14 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("설정된 관리자가 없거나 ADMIN 역할이 아니면 의미 오류를 반환한다")
-    fun rejectsMissingOrNonAdminConfiguredMember() {
-        whenever(memberService.getBySSOMemberId(1L)).thenReturn(null)
+    @DisplayName("ID 0 관리자가 없거나 ADMIN 역할이 아니면 의미 오류를 반환한다")
+    fun rejectsMissingOrNonAdminSystemMember() {
+        whenever(memberService.get(0L)).thenReturn(null)
 
         assertThatThrownBy { authService.issueAdminToken("master-password") }
             .isInstanceOf(jnu.econovation.ecoknockbecentral.common.exception.client.BadDataMeaningException::class.java)
 
-        whenever(memberService.getBySSOMemberId(1L)).thenReturn(userMember())
+        whenever(memberService.get(0L)).thenReturn(userMember())
 
         assertThatThrownBy { authService.issueAdminToken("master-password") }
             .isInstanceOf(jnu.econovation.ecoknockbecentral.common.exception.client.BadDataMeaningException::class.java)

@@ -22,7 +22,6 @@ import org.springframework.http.*
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.TestConstructor
-import org.springframework.test.context.TestPropertySource
 import org.springframework.web.client.RestClient
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -32,7 +31,6 @@ import java.nio.charset.StandardCharsets
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 @ActiveProfiles("dev")
-@TestPropertySource(properties = ["security.admin.sso-member-id=209902010001"])
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
 class AdminOverviewShortcutControllerE2ETest(
     @param:LocalServerPort
@@ -90,7 +88,6 @@ class AdminOverviewShortcutControllerE2ETest(
     @Test
     @DisplayName("마스터 비밀번호가 맞으면 관리자 인증 쿠키를 발급하고 관리자 화면으로 이동한다")
     fun masterPasswordLoginIssuesAuthCookies() {
-        saveMember(209902010001, promoteToAdmin = true)
         val response = postForm(
             path = "/admin/login/master",
             body = adminMasterPasswordFormBody(),
@@ -133,7 +130,6 @@ class AdminOverviewShortcutControllerE2ETest(
     @Test
     @DisplayName("마스터 비밀번호가 맞으면 관리자 계정의 일반 인증 쿠키를 발급한다")
     fun masterPasswordIssuesAdminAuthCookies() {
-        saveMember(209902010001, promoteToAdmin = true)
         val response = postJson(
             path = "/auth/admin",
             body = adminMasterPasswordJsonBody(),
@@ -162,7 +158,6 @@ class AdminOverviewShortcutControllerE2ETest(
     @Test
     @DisplayName("관리자 마스터 로그인 API는 관리자 쿠키를 발급한다")
     fun adminMasterLoginApiIssuesAdminCookie() {
-        saveMember(209902010001, promoteToAdmin = true)
         val response = postJson(
             path = "/auth/admin",
             body = adminMasterPasswordJsonBody(),
@@ -191,7 +186,6 @@ class AdminOverviewShortcutControllerE2ETest(
     @Test
     @DisplayName("관리자 로그인 API 쿠키로 관리자 JSON API에 접근할 수 있다")
     fun adminLoginApiCookieCanAccessAdminJsonApi() {
-        saveMember(209902010001, promoteToAdmin = true)
         val loginResponse = postJson(
             path = "/auth/admin",
             body = adminMasterPasswordJsonBody(),
@@ -209,6 +203,7 @@ class AdminOverviewShortcutControllerE2ETest(
         )
 
         assertThat(loginResponse.statusCode).isEqualTo(HttpStatus.NO_CONTENT)
+        assertThat(jwtUtil.extractId(accessToken)).isZero
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
     }
 
@@ -432,7 +427,6 @@ class AdminOverviewShortcutControllerE2ETest(
     @Test
     @DisplayName("CSR 로그아웃은 현재 refresh 세션을 폐기하고 인증 쿠키를 삭제한다")
     fun csrLogoutRevokesRefreshSessionAndRemovesAuthCookies() {
-        saveMember(209902010001, promoteToAdmin = true)
         val loginResponse = postJson("/auth/admin", adminMasterPasswordJsonBody())
         val refreshToken = cookieValue(loginResponse, REFRESH_TOKEN)
 
@@ -460,7 +454,6 @@ class AdminOverviewShortcutControllerE2ETest(
     @Test
     @DisplayName("오래된 refresh token으로 로그아웃해도 최신 refresh 세션은 유지한다")
     fun staleRefreshTokenDoesNotRevokeLatestSession() {
-        saveMember(209902010001, promoteToAdmin = true)
         val firstLogin = postJson("/auth/admin", adminMasterPasswordJsonBody())
         val staleRefreshToken = cookieValue(firstLogin, REFRESH_TOKEN)
         val latestLogin = postJson("/auth/admin", adminMasterPasswordJsonBody())
