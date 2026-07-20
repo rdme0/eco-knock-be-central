@@ -39,7 +39,7 @@ class RefreshTokenRepository(
         }
     }
 
-    fun save(memberId: Long, tokenId: String, ttl: Duration = authPolicyConfig.refreshTokenTTL) {
+    fun save(memberId: Long, tokenId: String, ttl: Duration) {
         redisTemplate.opsForValue().set(
             key(memberId),
             tokenId,

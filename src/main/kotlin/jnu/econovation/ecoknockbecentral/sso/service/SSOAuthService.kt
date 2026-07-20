@@ -1,5 +1,6 @@
 package jnu.econovation.ecoknockbecentral.sso.service
 
+import jnu.econovation.ecoknockbecentral.auth.config.AuthPolicyConfig
 import jnu.econovation.ecoknockbecentral.auth.repository.RefreshTokenRepository
 import jnu.econovation.ecoknockbecentral.common.exception.server.InternalServerException
 import jnu.econovation.ecoknockbecentral.common.security.util.JwtUtil
@@ -17,6 +18,7 @@ class SSOAuthService(
     private val memberService: MemberService,
     private val jwtUtil: JwtUtil,
     private val refreshTokenRepository: RefreshTokenRepository,
+    private val authPolicyConfig: AuthPolicyConfig,
 ) {
     fun authenticateMember(
         ssoAccessToken: String?
@@ -34,7 +36,7 @@ class SSOAuthService(
                 IllegalStateException("발급한 refresh token에서 jti 추출 실패")
             )
 
-        refreshTokenRepository.save(memberInfo.id, refreshTokenId)
+        refreshTokenRepository.save(memberInfo.id, refreshTokenId, authPolicyConfig.refreshTokenTTL)
 
         return SSOAuthResultDTO(
             memberInfo = memberInfo,
