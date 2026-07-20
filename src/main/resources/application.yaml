@@ -66,6 +66,11 @@ whozin:
   base-url: https://be.whozin.econovation.kr
   token: ${WHOZIN_TOKEN}
 
+blockchain:
+  ethereum-sepolia:
+    rpc-url: ${SEPOLIA_RPC_URL}
+    krt-token-address: ${SEPOLIA_KRT_TOKEN_ADDRESS}
+
 ai-server:
   base-url: ${AI_SERVER_HOST}
   timeout: 30s

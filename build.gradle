@@ -108,7 +108,7 @@ dependencies {
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 
     //web3j
-    implementation "org.web3j:crypto:${web3jVersion}"
+    implementation "org.web3j:core:${web3jVersion}"
 }
 
 protobuf {
