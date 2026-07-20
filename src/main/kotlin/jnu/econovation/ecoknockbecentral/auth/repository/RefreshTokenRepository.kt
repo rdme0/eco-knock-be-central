@@ -26,9 +26,15 @@ class RefreshTokenRepository(
         private const val SUCCESSFULLY_REPLACED_CODE = 1L
         private const val MISSING_CODE = 0L
         private const val MISMATCHED_CODE = -1L
+        private const val DELETED_CODE = 1L
 
         private val ROTATE_SCRIPT = DefaultRedisScript<Long>().apply {
             setLocation(ClassPathResource("redis/rotate-refresh-token.lua"))
+            resultType = Long::class.java
+        }
+
+        private val DELETE_IF_MATCHES_SCRIPT = DefaultRedisScript<Long>().apply {
+            setLocation(ClassPathResource("redis/delete-refresh-token-if-matches.lua"))
             resultType = Long::class.java
         }
     }
@@ -65,6 +71,14 @@ class RefreshTokenRepository(
 
     fun delete(memberId: Long) {
         redisTemplate.delete(key(memberId))
+    }
+
+    fun deleteIfMatches(memberId: Long, tokenId: String): Boolean {
+        return redisTemplate.execute(
+            DELETE_IF_MATCHES_SCRIPT,
+            listOf(key(memberId)),
+            tokenId,
+        ) == DELETED_CODE
     }
 
     private fun key(memberId: Long): String {
