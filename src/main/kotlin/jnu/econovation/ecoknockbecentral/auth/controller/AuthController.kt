@@ -147,7 +147,7 @@ class AuthController(
     )
     @Operation(
         summary = "관리자 마스터 로그인",
-        description = "관리자 마스터 비밀번호를 검증하고 설정된 ADMIN 회원의 accessToken, refreshToken HttpOnly 쿠키를 발급합니다.",
+        description = "관리자 마스터 비밀번호를 검증하고 ID가 0이며 ADMIN 역할인 시스템 관리자 회원의 accessToken, refreshToken HttpOnly 쿠키를 발급합니다.",
         security = [],
         responses = [
             ApiResponse(responseCode = "204", description = "관리자 마스터 로그인 성공", content = [Content()]),
@@ -164,7 +164,7 @@ class AuthController(
             ),
             ApiResponse(
                 responseCode = "422",
-                description = "관리자 인증 대상 회원 설정 오류 또는 ADMIN 역할 아님",
+                description = "ID 0 시스템 관리자 회원이 없거나 ADMIN 역할이 아님",
                 content = [Content(
                     mediaType = MediaType.APPLICATION_JSON_VALUE,
                     examples = [ExampleObject(
