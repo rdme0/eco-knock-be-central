@@ -2,8 +2,6 @@ package jnu.econovation.ecoknockbecentral.common.openapi.constant
 
 object OpenApiConstants {
     const val ACCESS_TOKEN_SECURITY_SCHEME_NAME = "accessToken"
-    const val ADMIN_MASTER_TOKEN_SECURITY_SCHEME_NAME = "adminMasterToken"
-
     const val COMMON_RESPONSE = "공통 응답 래퍼"
     const val ERROR_RESPONSE = "공통 에러 응답"
     const val REDIRECT_RESPONSE = "리다이렉트 응답"

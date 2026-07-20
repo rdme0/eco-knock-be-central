@@ -2,16 +2,17 @@ package jnu.econovation.ecoknockbecentral.member.service
 
 import jnu.econovation.ecoknockbecentral.common.exception.server.InternalServerException
 import jnu.econovation.ecoknockbecentral.member.dto.MemberInfoDTO
+import jnu.econovation.ecoknockbecentral.member.dto.response.GetProfileResponse
 import jnu.econovation.ecoknockbecentral.member.event.MemberCreatedEvent
 import jnu.econovation.ecoknockbecentral.member.model.entity.Member
-import jnu.econovation.ecoknockbecentral.member.repository.MemberRepository
 import jnu.econovation.ecoknockbecentral.member.model.vo.Role
+import jnu.econovation.ecoknockbecentral.member.repository.MemberRepository
 import jnu.econovation.ecoknockbecentral.sso.dto.SSOMeDTO
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import kotlin.jvm.optionals.getOrNull
 import java.time.Instant
+import kotlin.jvm.optionals.getOrNull
 
 @Service
 class MemberService(
@@ -54,13 +55,6 @@ class MemberService(
     }
 
     @Transactional(readOnly = true)
-    fun getBySSOMemberId(ssoMemberId: Long): MemberInfoDTO? {
-        val entity = repository.findBySsoMemberId(ssoMemberId) ?: return null
-
-        return MemberInfoDTO.from(entity)
-    }
-
-    @Transactional(readOnly = true)
     fun getEntity(id: Long): Member? = repository.findById(id).getOrNull()
 
     @Transactional(readOnly = true)
@@ -74,6 +68,11 @@ class MemberService(
     fun getExpiredGuestIds(now: Instant): List<Long> {
         return repository.findAllByRoleAndGuestExpiresAtLessThanEqual(Role.GUEST, now)
             .map { it.id }
+    }
+
+    @Transactional(readOnly = true)
+    fun getProfile(memberInfo: MemberInfoDTO): GetProfileResponse {
+        return GetProfileResponse.from(memberInfo)
     }
 
     @Transactional

@@ -2,7 +2,7 @@ package jnu.econovation.ecoknockbecentral.sso.dto
 
 import jnu.econovation.ecoknockbecentral.member.model.vo.ActiveStatus
 import jnu.econovation.ecoknockbecentral.member.model.vo.Cohort
-import jnu.econovation.ecoknockbecentral.sso.dto.response.SSOMeResponse
+import jnu.econovation.ecoknockbecentral.sso.dto.response.SSOPassportResponse
 
 data class SSOMeDTO(
     val ssoMemberId: Long,
@@ -11,7 +11,7 @@ data class SSOMeDTO(
     val status: ActiveStatus,
 ) {
     companion object {
-        fun from(response: SSOMeResponse): SSOMeDTO {
+        fun from(response: SSOPassportResponse): SSOMeDTO {
             return SSOMeDTO(
                 ssoMemberId = response.memberId,
                 name = response.name,

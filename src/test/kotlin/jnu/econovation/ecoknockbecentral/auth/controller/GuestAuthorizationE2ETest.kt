@@ -27,7 +27,7 @@ import java.time.Instant
 @ActiveProfiles("dev")
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
 class GuestAuthorizationE2ETest(
-    @LocalServerPort private val port: Int,
+    @param:LocalServerPort private val port: Int,
     private val memberRepository: MemberRepository,
     private val jwtUtil: JwtUtil,
 ) {

@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.security.SecurityScheme
 import io.swagger.v3.oas.models.Components
 import io.swagger.v3.oas.models.examples.Example
 import jnu.econovation.ecoknockbecentral.auth.constant.AuthConstant.ACCESS_TOKEN
-import jnu.econovation.ecoknockbecentral.common.security.constant.AdminAuthConstant.ADMIN_MASTER_TOKEN
 import jnu.econovation.ecoknockbecentral.common.dto.response.CommonResponse
 import jnu.econovation.ecoknockbecentral.common.exception.constants.ErrorCode
 import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants
@@ -25,13 +24,6 @@ import org.springframework.context.annotation.Configuration
     `in` = SecuritySchemeIn.COOKIE,
     paramName = ACCESS_TOKEN,
     description = "서비스 access token 쿠키",
-)
-@SecurityScheme(
-    name = OpenApiConstants.ADMIN_MASTER_TOKEN_SECURITY_SCHEME_NAME,
-    type = SecuritySchemeType.APIKEY,
-    `in` = SecuritySchemeIn.COOKIE,
-    paramName = ADMIN_MASTER_TOKEN,
-    description = "관리자 마스터 인증 token 쿠키",
 )
 @OpenAPIDefinition(
     info = Info(

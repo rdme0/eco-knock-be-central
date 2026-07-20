@@ -1,6 +1,5 @@
 package jnu.econovation.ecoknockbecentral.common.security.config;
 
-import jnu.econovation.ecoknockbecentral.common.security.filter.AdminMasterAuthFilter;
 import jnu.econovation.ecoknockbecentral.common.security.filter.JwtAuthFilter;
 import jnu.econovation.ecoknockbecentral.common.security.filter.SSORedirectParamFilter;
 import jnu.econovation.ecoknockbecentral.common.security.filter.ApiDocAccessFilter;
@@ -36,7 +35,6 @@ public class SecurityConfig {
     private static final long CORS_MAX_AGE = 3600L;
 
     private final UriSecurityConfig uriSecurityConfig;
-    private final AdminMasterAuthFilter adminMasterAuthFilter;
     private final ApiDocAccessFilter apiDocAccessFilter;
     private final JwtAuthFilter jwtAuthFilter;
     private final SSORedirectParamFilter ssoRedirectParamFilter;
@@ -95,9 +93,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/admin", "/admin/").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/sso/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/sso/callback").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/sso/passport").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/reissue").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/auth/test-token").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/logout").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/guest").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/admin").permitAll()
                         .requestMatchers(HttpMethod.GET, "/air-quality/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/overview/shortcuts").hasAnyRole("GUEST", "USER", "ADMIN")
                         .anyRequest().hasAnyRole("USER", "ADMIN")
@@ -125,10 +125,6 @@ public class SecurityConfig {
                 .addFilterBefore(
                         jwtAuthFilter,
                         UsernamePasswordAuthenticationFilter.class
-                )
-                .addFilterBefore(
-                        adminMasterAuthFilter,
-                        JwtAuthFilter.class
                 )
                 .addFilterBefore(
                         apiDocAccessFilter,

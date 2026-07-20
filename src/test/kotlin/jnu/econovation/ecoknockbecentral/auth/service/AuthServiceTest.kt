@@ -1,12 +1,12 @@
 package jnu.econovation.ecoknockbecentral.auth.service
 
+import jnu.econovation.ecoknockbecentral.admin.config.AdminConfig
 import jnu.econovation.ecoknockbecentral.auth.config.AuthPolicyConfig
-import jnu.econovation.ecoknockbecentral.auth.config.TestAuthConfig
+import jnu.econovation.ecoknockbecentral.auth.exception.BadAdminMasterPasswordException
 import jnu.econovation.ecoknockbecentral.auth.exception.GuestLoginRateLimitExceededException
 import jnu.econovation.ecoknockbecentral.auth.repository.GuestLoginRateLimitRepository
 import jnu.econovation.ecoknockbecentral.auth.repository.RefreshTokenRepository
 import jnu.econovation.ecoknockbecentral.auth.repository.RefreshTokenRotationResult
-import jnu.econovation.ecoknockbecentral.common.security.config.AdminSecurityConfig
 import jnu.econovation.ecoknockbecentral.common.security.util.JwtUtil
 import jnu.econovation.ecoknockbecentral.member.dto.MemberInfoDTO
 import jnu.econovation.ecoknockbecentral.member.model.vo.Role
@@ -16,13 +16,7 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+import org.mockito.kotlin.*
 import java.time.Duration
 import java.time.Instant
 
@@ -31,8 +25,7 @@ class AuthServiceTest {
     private val memberService = mock<MemberService>()
     private val refreshTokenRepository = mock<RefreshTokenRepository>()
     private val guestLoginRateLimitRepository = mock<GuestLoginRateLimitRepository>()
-    private val adminSecurityConfig = mock<AdminSecurityConfig>()
-    private val testAuthConfig = TestAuthConfig(ssoMemberId = 0)
+    private val adminConfig = AdminConfig(masterPassword = "master-password")
     private val authPolicyConfig = AuthPolicyConfig(
         accessTokenTTL = Duration.ofHours(6),
         refreshTokenTTL = Duration.ofDays(60),
@@ -51,8 +44,7 @@ class AuthServiceTest {
             refreshTokenRepository = refreshTokenRepository,
             guestLoginRateLimitRepository = guestLoginRateLimitRepository,
             authPolicyConfig = authPolicyConfig,
-            adminSecurityConfig = adminSecurityConfig,
-            testAuthConfig = testAuthConfig,
+            adminConfig = adminConfig,
         )
     }
 
@@ -86,6 +78,78 @@ class AuthServiceTest {
             .isInstanceOf(GuestLoginRateLimitExceededException::class.java)
 
         verify(memberService, never()).createGuest(any())
+    }
+
+    @Test
+    @DisplayName("올바른 관리자 마스터 비밀번호는 ID 0 ADMIN 회원의 일반 토큰을 발급한다")
+    fun issuesAdminToken() {
+        val admin = adminMember()
+        whenever(memberService.get(0L)).thenReturn(admin)
+        whenever(jwtUtil.generateAccessToken(admin)).thenReturn("access")
+        whenever(jwtUtil.generateRefreshToken(admin)).thenReturn("refresh")
+        whenever(jwtUtil.extractTokenId("refresh")).thenReturn("refresh-id")
+
+        val result = authService.issueAdminToken("master-password")
+
+        assertThat(result.accessToken).isEqualTo("access")
+        assertThat(result.refreshToken).isEqualTo("refresh")
+        verify(refreshTokenRepository).save(admin.id, "refresh-id", authPolicyConfig.refreshTokenTTL)
+    }
+
+    @Test
+    @DisplayName("잘못된 관리자 마스터 비밀번호는 인증 오류를 반환한다")
+    fun rejectsInvalidAdminMasterPassword() {
+        assertThatThrownBy { authService.issueAdminToken("wrong-password") }
+            .isInstanceOf(BadAdminMasterPasswordException::class.java)
+    }
+
+    @Test
+    @DisplayName("ID 0 관리자가 없거나 ADMIN 역할이 아니면 의미 오류를 반환한다")
+    fun rejectsMissingOrNonAdminSystemMember() {
+        whenever(memberService.get(0L)).thenReturn(null)
+
+        assertThatThrownBy { authService.issueAdminToken("master-password") }
+            .isInstanceOf(jnu.econovation.ecoknockbecentral.common.exception.client.BadDataMeaningException::class.java)
+
+        whenever(memberService.get(0L)).thenReturn(userMember())
+
+        assertThatThrownBy { authService.issueAdminToken("master-password") }
+            .isInstanceOf(jnu.econovation.ecoknockbecentral.common.exception.client.BadDataMeaningException::class.java)
+    }
+
+    @Test
+    @DisplayName("로그아웃은 유효한 refresh token의 현재 jti만 폐기한다")
+    fun revokesCurrentRefreshTokenOnLogout() {
+        whenever(jwtUtil.validateRefreshToken("refresh")).thenReturn(true)
+        whenever(jwtUtil.extractId("refresh")).thenReturn(1L)
+        whenever(jwtUtil.extractTokenId("refresh")).thenReturn("refresh-id")
+
+        authService.logout("refresh")
+
+        verify(refreshTokenRepository).deleteIfMatches(1L, "refresh-id")
+    }
+
+    @Test
+    @DisplayName("로그아웃은 누락되거나 유효하지 않은 refresh token을 무시한다")
+    fun ignoresMissingOrInvalidRefreshTokenOnLogout() {
+        whenever(jwtUtil.validateRefreshToken("invalid")).thenReturn(false)
+
+        authService.logout(null)
+        authService.logout("invalid")
+
+        verify(refreshTokenRepository, never()).deleteIfMatches(any(), any())
+    }
+
+    @Test
+    @DisplayName("로그아웃은 refresh session 폐기 실패를 외부로 전파하지 않는다")
+    fun suppressesRefreshSessionRevocationFailureOnLogout() {
+        whenever(jwtUtil.validateRefreshToken("refresh")).thenReturn(true)
+        whenever(jwtUtil.extractId("refresh")).thenReturn(1L)
+        whenever(jwtUtil.extractTokenId("refresh")).thenReturn("refresh-id")
+        whenever(refreshTokenRepository.deleteIfMatches(1L, "refresh-id"))
+            .thenThrow(IllegalStateException("redis unavailable"))
+
+        authService.logout("refresh")
     }
 
     @Test
@@ -145,4 +209,16 @@ class AuthServiceTest {
             guestExpiresAt = expiresAt,
         )
     }
+
+    private fun adminMember() = userMember(role = Role.ADMIN)
+
+    private fun userMember(role: Role = Role.USER) = MemberInfoDTO(
+        id = 1L,
+        ssoMemberId = 1L,
+        role = role,
+        cohort = null,
+        name = "관리자",
+        status = null,
+        guestExpiresAt = null,
+    )
 }

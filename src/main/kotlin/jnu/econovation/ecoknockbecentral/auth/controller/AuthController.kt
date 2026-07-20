@@ -11,7 +11,7 @@ import jakarta.servlet.http.HttpServletResponse
 import jnu.econovation.ecoknockbecentral.auth.config.AuthPolicyConfig
 import jnu.econovation.ecoknockbecentral.auth.constant.AuthConstant.ACCESS_TOKEN
 import jnu.econovation.ecoknockbecentral.auth.constant.AuthConstant.REFRESH_TOKEN
-import jnu.econovation.ecoknockbecentral.auth.dto.request.TestTokenRequest
+import jnu.econovation.ecoknockbecentral.auth.dto.request.AdminLoginRequest
 import jnu.econovation.ecoknockbecentral.auth.exception.BadRefreshTokenException
 import jnu.econovation.ecoknockbecentral.auth.service.AuthService
 import jnu.econovation.ecoknockbecentral.common.cookie.util.CookieUtil
@@ -23,10 +23,10 @@ import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstant
 import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.BAD_REFRESH_TOKEN_EXAMPLE_REF
 import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.EMPTY_SUCCESS_EXAMPLE_NAME
 import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.EMPTY_SUCCESS_EXAMPLE_REF
-import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.UNAUTHORIZED_EXAMPLE_NAME
-import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.UNAUTHORIZED_EXAMPLE_REF
 import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.GUEST_LOGIN_RATE_LIMIT_EXCEEDED_EXAMPLE_NAME
 import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.GUEST_LOGIN_RATE_LIMIT_EXCEEDED_EXAMPLE_REF
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.UNAUTHORIZED_EXAMPLE_NAME
+import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.UNAUTHORIZED_EXAMPLE_REF
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.http.ResponseEntity.ok
@@ -142,56 +142,45 @@ class AuthController(
     }
 
     @PostMapping(
-        "/test-token",
+        "/admin",
         consumes = [MediaType.APPLICATION_JSON_VALUE],
-        produces = [MediaType.APPLICATION_JSON_VALUE],
     )
     @Operation(
-        summary = "테스트 인증 쿠키 발급",
-        description = "관리자 마스터 비밀번호를 검증하고 운영 테스트용 고정 회원의 accessToken, refreshToken 쿠키를 발급합니다.",
+        summary = "관리자 마스터 로그인",
+        description = "관리자 마스터 비밀번호를 검증하고 ID가 0이며 ADMIN 역할인 시스템 관리자 회원의 accessToken, refreshToken HttpOnly 쿠키를 발급합니다.",
         security = [],
         responses = [
-            ApiResponse(
-                responseCode = "200",
-                description = "테스트 인증 쿠키 발급 성공",
-                content = [Content(
-                    mediaType = MediaType.APPLICATION_JSON_VALUE,
-                    examples = [ExampleObject(
-                        name = EMPTY_SUCCESS_EXAMPLE_NAME,
-                        ref = EMPTY_SUCCESS_EXAMPLE_REF
-                    )]
-                )]
-            ),
+            ApiResponse(responseCode = "204", description = "관리자 마스터 로그인 성공", content = [Content()]),
             ApiResponse(
                 responseCode = "401",
-                description = "마스터 비밀번호 불일치",
+                description = "마스터 비밀번호 불일치 또는 누락",
                 content = [Content(
                     mediaType = MediaType.APPLICATION_JSON_VALUE,
                     examples = [ExampleObject(
                         name = UNAUTHORIZED_EXAMPLE_NAME,
-                        ref = UNAUTHORIZED_EXAMPLE_REF
+                        ref = UNAUTHORIZED_EXAMPLE_REF,
                     )]
                 )]
             ),
             ApiResponse(
                 responseCode = "422",
-                description = "테스트 인증 대상 회원 설정 오류 또는 회원 없음",
+                description = "ID 0 시스템 관리자 회원이 없거나 ADMIN 역할이 아님",
                 content = [Content(
                     mediaType = MediaType.APPLICATION_JSON_VALUE,
                     examples = [ExampleObject(
                         name = BAD_DATA_MEANING_EXAMPLE_NAME,
-                        ref = BAD_DATA_MEANING_EXAMPLE_REF
+                        ref = BAD_DATA_MEANING_EXAMPLE_REF,
                     )]
                 )]
-            )
+            ),
         ]
     )
-    fun issueTestToken(
-        @RequestBody request: TestTokenRequest,
+    fun loginWithAdminMasterPassword(
+        @RequestBody(required = false) request: AdminLoginRequest?,
         servletRequest: HttpServletRequest,
         response: HttpServletResponse,
-    ): ResponseEntity<CommonResponse<Void>> {
-        val tokens = authService.issueTestToken(request.password)
+    ): ResponseEntity<Void> {
+        val tokens = authService.issueAdminToken(request?.password)
 
         CookieUtil.addCookie(
             servletRequest,
@@ -200,7 +189,6 @@ class AuthController(
             tokens.accessToken,
             authPolicyConfig.accessTokenTTL.toSeconds().toInt(),
         )
-
         CookieUtil.addCookie(
             servletRequest,
             response,
@@ -209,6 +197,29 @@ class AuthController(
             authPolicyConfig.refreshTokenTTL.toSeconds().toInt(),
         )
 
-        return ok(emptySuccess())
+        return noContent().build()
     }
+
+    @PostMapping("/logout")
+    @Operation(
+        summary = "로그아웃",
+        description = "현재 refreshToken이 활성 세션과 일치하면 서버 세션을 폐기하고 accessToken, refreshToken 쿠키를 삭제합니다.",
+        security = [],
+        responses = [
+            ApiResponse(responseCode = "204", description = "로그아웃 처리 완료", content = [Content()]),
+        ],
+    )
+    fun logout(
+        @CookieValue(name = REFRESH_TOKEN, required = false)
+        @Parameter(description = "로그아웃할 refreshToken 쿠키")
+        refreshToken: String?,
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+    ): ResponseEntity<Void> {
+        authService.logout(refreshToken)
+        CookieUtil.removeCookie(request, response, ACCESS_TOKEN)
+        CookieUtil.removeCookie(request, response, REFRESH_TOKEN)
+        return noContent().build()
+    }
+
 }
