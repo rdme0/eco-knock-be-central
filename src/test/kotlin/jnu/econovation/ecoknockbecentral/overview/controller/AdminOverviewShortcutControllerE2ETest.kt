@@ -108,8 +108,8 @@ class AdminOverviewShortcutControllerE2ETest(
 
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         assertThat(response.body).contains("/sso/login")
-        assertThat(response.body).contains("redirect=http://localhost:$port/admin")
-        assertThat(response.body).doesNotContain("redirect=http://localhost:$port/admin/overview-shortcuts")
+        assertThat(response.body).contains("redirect=http://localhost:18081/admin")
+        assertThat(response.body).doesNotContain("redirect=http://localhost:18081/admin/overview-shortcuts")
         assertThat(response.body).contains("/admin/login.css")
     }
 

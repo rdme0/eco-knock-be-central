@@ -30,10 +30,9 @@ class AdminAuthController(
 
     @GetMapping("/login")
     fun login(
-        request: HttpServletRequest,
         model: Model,
     ): String {
-        model.addAttribute("ssoLoginUrl", adminLoginUrlService.ssoLoginUrl(request))
+        model.addAttribute("ssoLoginUrl", adminLoginUrlService.ssoLoginUrl())
         return "admin/login"
     }
 
@@ -48,7 +47,7 @@ class AdminAuthController(
             authService.issueAdminToken(password)
         } catch (exception: ClientException) {
             logger.warn(exception) { "master login client exception" }
-            model.addAttribute("ssoLoginUrl", adminLoginUrlService.ssoLoginUrl(request))
+            model.addAttribute("ssoLoginUrl", adminLoginUrlService.ssoLoginUrl())
             model.addAttribute("errorMessage", "관리자 로그인 정보를 확인할 수 없습니다.")
             return "admin/login"
         }
