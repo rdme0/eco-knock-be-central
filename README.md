@@ -59,7 +59,7 @@ flowchart LR
 - `1m`, `5m`, `15m`, `1h`, `4h`, `1d` 공기질 materialized view와 주기적 refresh
 - 공기질 timeseries·history 조회 및 SSE 실시간 스트림
 - 조도와 최근 공기질을 기준으로 한 공기청정기 자동제어
-- auth-econovation WEB SSO 로그인과 HttpOnly JWT 쿠키 인증
+- auth-econovation APP SSO 로그인과 HttpOnly JWT 쿠키 인증
 - `GUEST` 게스트 로그인과 24시간 하드 만료 세션
 - IP별 시간당 5회 게스트 로그인 제한
 - 게스트가 접근할 수 있는 조회 API allowlist
@@ -193,7 +193,7 @@ src/main/resources
 | `WALLET_ENCRYPTION_KEY` | 지갑 개인키 암호화에 사용할 Base64 인코딩된 32바이트 키 |
 | `SEPOLIA_RPC_URL` | Ethereum Sepolia 네트워크 조회에 사용할 RPC URL |
 | `SEPOLIA_KRT_TOKEN_ADDRESS` | Ethereum Sepolia에 배포된 KRT 컨트랙트 주소 |
-| `SSO_CLIENT_ID` | auth-econovation에 등록된 WEB client id |
+| `SSO_CLIENT_ID` | auth-econovation에 등록된 APP client id (`sso.login-page-base-url`은 로그인 화면, `sso.gateway-passport-url`은 Gateway Passport 검증 주소) |
 | `WHOZIN_TOKEN` | Whozin 공개 회원 API Bearer token |
 | `ADMIN_MASTER_PASSWORD` | 관리자 마스터 비밀번호 및 Grafana 비밀번호 |
 | `EMBEDDED_SERVER_HOST` | 임베디드 gRPC 서버 host |
@@ -249,7 +249,7 @@ PROD_POSTGRES_PASSWORD=replace-with-prod-password
 PROD_GRAFANA_HOST=https://monitoring.replace-with-server.example.com
 ```
 
-관리자 마스터 로그인 대상 회원은 환경 변수가 아니라 `application.yaml`의 `security.admin.sso-member-id`에 지정합니다. 해당 SSO 회원의 DB `Member.role`은 `ADMIN`이어야 합니다.
+관리자 마스터 로그인은 애플리케이션 시작 시 생성·초기화되는 시스템 회원(`Member.id=0`, `ssoMemberId=0`, `role=ADMIN`)을 사용합니다. 별도 SSO 회원 ID 설정은 필요하지 않습니다.
 
 ## 실행 방법
 
@@ -467,7 +467,10 @@ flowchart TD
 ```
 
 - 일반 사용자와 관리자는 access/refresh JWT를 HttpOnly 쿠키로 사용합니다.
-- CSR 관리자는 `POST /auth/admin`에 JSON 본문 `{"password":"..."}`을 보내 설정된 관리자 회원의 access/refresh HttpOnly 쿠키를 발급받을 수 있습니다. 이후 `credentials: 'include'`로 관리자 JSON API와 회원 정보 API를 호출할 수 있습니다.
+- SSO 로그인은 `sso.login-page-base-url`의 로그인 화면으로 항상 `client-type=app`을 전달해 시작합니다. 로그인 완료 후 auth-econovation은 등록된 `/sso/callback` 주소에 `accessToken` 쿼리를 전달하고, 백엔드는 `sso.gateway-passport-url`로 `Authorization: Bearer <accessToken>`을 전송합니다. Gateway가 검증 후 내부 `/sso/passport`에 Passport를 주입하면 자체 access/refresh 쿠키를 발급합니다. callback의 `refreshToken`, `accessExpiredTime`은 사용하거나 저장하지 않습니다. callback 응답은 `Referrer-Policy: no-referrer`를 설정해 SSO 토큰이 최종 이동 요청의 Referer에 전달되지 않게 합니다.
+- Passport 연동은 [JNU-econovation/auth-common](https://github.com/JNU-econovation/auth-common)을 참고했지만, 현재 프로젝트의 Spring Boot 4와 호환되지 않아 필요한 코드를 프로젝트 내부에 직접 이식해 사용합니다. 따라서 해당 외부 라이브러리는 활성 의존성으로 사용하지 않습니다.
+- Passport의 `roles`는 프로젝트의 `Member.role`로 변환하지 않으며, 관리자 접근 여부는 프로젝트 DB의 `Member.role`로 판단합니다.
+- CSR 관리자는 `POST /auth/admin`에 JSON 본문 `{"password":"..."}`을 보내 시스템 관리자 회원의 access/refresh HttpOnly 쿠키를 발급받을 수 있습니다. 이후 `credentials: 'include'`로 관리자 JSON API와 회원 정보 API를 호출할 수 있습니다.
 - `POST /auth/logout`은 인증 없이 호출할 수 있으며 access/refresh 쿠키를 삭제합니다. 유효한 refresh token의 jti가 Redis에 저장된 현재 세션과 일치할 때만 해당 세션도 폐기하므로, 오래된 token으로 최신 세션을 종료하지 않습니다.
 - 게스트는 `POST /auth/guest`로 `GUEST` 회원과 session cookie를 발급받습니다.
 - 게스트 세션은 최초 발급 시각부터 최대 24시간만 유효합니다. 재발급해도 만료 시각은 연장되지 않습니다.
@@ -487,7 +490,7 @@ flowchart TD
 - 자동제어 활성화 상태 변경
 - SSO 로그인 또는 `ADMIN_MASTER_PASSWORD` 기반 관리자 로그인(SSR 폼: `POST /admin/login/master`, CSR JSON: `POST /auth/admin`)
 
-SSO 로그인 후 관리자 접근 여부는 SSO role이 아니라 프로젝트 DB의 `Member.role = ADMIN`으로 판단합니다. 마스터 비밀번호 로그인은 `security.admin.sso-member-id`로 지정한 DB 회원을 사용하며, 해당 회원은 운영자가 `ADMIN` 역할로 설정해야 합니다.
+SSO 로그인 후 관리자 접근 여부는 SSO role이 아니라 프로젝트 DB의 `Member.role = ADMIN`으로 판단합니다. 마스터 비밀번호 로그인은 애플리케이션 시작 시 초기화되는 ID 0 시스템 관리자 회원을 사용합니다.
 
 ## API 문서
 
