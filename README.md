@@ -191,6 +191,8 @@ src/main/resources
 | `JWT_SECRET_KEY` | JWT HMAC 서명에 사용할 충분히 긴 키 |
 | `AES256_KEY` | 정확히 32바이트인 AES-256 키 |
 | `WALLET_ENCRYPTION_KEY` | 지갑 개인키 암호화에 사용할 Base64 인코딩된 32바이트 키 |
+| `SEPOLIA_RPC_URL` | Ethereum Sepolia 네트워크 조회에 사용할 RPC URL |
+| `SEPOLIA_KRT_TOKEN_ADDRESS` | Ethereum Sepolia에 배포된 KRT 컨트랙트 주소 |
 | `SSO_CLIENT_ID` | auth-econovation에 등록된 WEB client id |
 | `WHOZIN_TOKEN` | Whozin 공개 회원 API Bearer token |
 | `ADMIN_MASTER_PASSWORD` | 관리자 마스터 비밀번호 및 Grafana 비밀번호 |
@@ -227,6 +229,8 @@ src/main/resources
 JWT_SECRET_KEY=replace-with-a-long-secret-key
 AES256_KEY=12345678901234567890123456789012
 WALLET_ENCRYPTION_KEY=replace-with-base64-encoded-32-byte-key
+SEPOLIA_RPC_URL=https://replace-with-ethereum-sepolia-rpc-url
+SEPOLIA_KRT_TOKEN_ADDRESS=0xreplace-with-sepolia-krt-token-address
 SSO_CLIENT_ID=replace-with-sso-client-id
 WHOZIN_TOKEN=replace-with-whozin-token
 ADMIN_MASTER_PASSWORD=replace-with-admin-master-password
@@ -405,6 +409,12 @@ sequenceDiagram
 
 동일 회원의 관리형 지갑 생성은 회원 행에 대한 비관적 쓰기 잠금과 DB unique index로 중복을 방지합니다. 현재 자동 생성과 보상 수령 대상으로 사용하는 지갑 유형은 `MANAGED`이며, 사용자가 직접 등록하는 `EXTERNAL` 지갑 전환 기능은 아직 제공하지 않습니다.
 
+### KRT 온체인 잔액 조회
+
+`GET /wallet/me`는 로그인한 SSO 회원의 활성 보상 지갑을 찾은 뒤, Web3j의 읽기 전용 `eth_call`로 KRT 컨트랙트의 `balanceOf(address)`를 호출합니다. 조회 트랜잭션을 생성하지 않으므로 가스비와 운영 지갑의 개인키가 필요하지 않습니다.
+
+응답에는 `walletAddress`, `walletType`, `balance`, `symbol`이 포함됩니다. KRT의 18 decimals를 적용한 잔액은 JavaScript 숫자 정밀도 손실을 방지하기 위해 문자열로 반환합니다. 게스트 회원은 관리형 지갑을 생성하지 않으므로 이 API의 접근 대상에서 제외됩니다.
+
 ## API 요약
 
 상세 요청·응답·오류 형식은 [API 문서](#api-문서)에서 확인합니다.
@@ -422,6 +432,7 @@ sequenceDiagram
 | 바로가기 | `PUT` | `/overview/shortcuts` | 사용자 바로가기 전체 교체 |
 | 바로가기 | `PUT` | `/overview/shortcuts/reset` | 기본 바로가기 재설정 |
 | AI | `POST` | `/ai/chat` | 이전 대화와 현재 질문을 이용한 AI 채팅 |
+| 지갑 | `GET` | `/wallet/me` | 현재 회원의 활성 보상 지갑 주소와 KRT 온체인 잔액 조회 |
 | 관리자 | `GET/PUT` | `/admin/api-docs-access` | API 문서 공개 상태 조회·변경 |
 | 관리자 | `GET/PUT` | `/admin/control-settings` | 자동제어 정책 조회·변경 |
 | 관리자 | `GET/POST` | `/admin/overview-shortcuts` | 기본 바로가기 조회·저장 |
@@ -539,4 +550,5 @@ Redis script는 `src/main/resources/redis`에 둡니다.
 - 게스트는 AI 기능과 쓰기·관리자 API를 사용할 수 없습니다.
 - API 문서는 Redis 공개 토글이 활성화된 경우에만 확인할 수 있습니다.
 - 관리형 지갑 개인키 복호화에는 생성 당시 사용한 `WALLET_ENCRYPTION_KEY`가 계속 필요합니다.
+- KRT 잔액 조회는 `SEPOLIA_RPC_URL`로 설정한 Ethereum Sepolia RPC 제공자에 의존합니다.
 - 사용자가 직접 등록하는 외부 EVM 지갑 전환 기능은 아직 구현되지 않았습니다.
