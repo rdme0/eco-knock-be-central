@@ -1,22 +1,21 @@
 package jnu.econovation.ecoknockbecentral.auth.service
 
-import jnu.econovation.ecoknockbecentral.auth.config.TestAuthConfig
+import jnu.econovation.ecoknockbecentral.admin.config.AdminConfig
 import jnu.econovation.ecoknockbecentral.auth.config.AuthPolicyConfig
 import jnu.econovation.ecoknockbecentral.auth.dto.AuthTokenDTO
+import jnu.econovation.ecoknockbecentral.auth.exception.BadAdminMasterPasswordException
 import jnu.econovation.ecoknockbecentral.auth.exception.BadRefreshTokenException
-import jnu.econovation.ecoknockbecentral.auth.exception.BadTestTokenPasswordException
 import jnu.econovation.ecoknockbecentral.auth.exception.GuestLoginRateLimitExceededException
 import jnu.econovation.ecoknockbecentral.auth.repository.GuestLoginRateLimitRepository
 import jnu.econovation.ecoknockbecentral.auth.repository.RefreshTokenRepository
 import jnu.econovation.ecoknockbecentral.auth.repository.RefreshTokenRotationResult.*
-import jnu.econovation.ecoknockbecentral.common.extension.isEqualConstantTime
 import jnu.econovation.ecoknockbecentral.common.exception.client.BadDataMeaningException
 import jnu.econovation.ecoknockbecentral.common.exception.server.InternalServerException
-import jnu.econovation.ecoknockbecentral.common.security.config.AdminSecurityConfig
+import jnu.econovation.ecoknockbecentral.common.extension.isEqualConstantTime
 import jnu.econovation.ecoknockbecentral.common.security.util.JwtUtil
-import jnu.econovation.ecoknockbecentral.member.service.MemberService
 import jnu.econovation.ecoknockbecentral.member.dto.MemberInfoDTO
 import jnu.econovation.ecoknockbecentral.member.model.vo.Role
+import jnu.econovation.ecoknockbecentral.member.service.MemberService
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
 import java.time.Duration
@@ -29,8 +28,7 @@ class AuthService(
     private val refreshTokenRepository: RefreshTokenRepository,
     private val guestLoginRateLimitRepository: GuestLoginRateLimitRepository,
     private val authPolicyConfig: AuthPolicyConfig,
-    private val adminSecurityConfig: AdminSecurityConfig,
-    private val testAuthConfig: TestAuthConfig,
+    private val adminConfig: AdminConfig,
 ) {
     companion object {
         private val logger = KotlinLogging.logger {}
@@ -115,26 +113,43 @@ class AuthService(
         )
     }
 
-    fun issueTestToken(password: String?): AuthTokenDTO {
-        if (!adminSecurityConfig.masterPassword.isEqualConstantTime(password)) {
-            throw BadTestTokenPasswordException()
+    fun issueAdminToken(password: String?): AuthTokenDTO {
+        if (!adminConfig.masterPassword.isEqualConstantTime(password)) {
+            throw BadAdminMasterPasswordException()
         }
 
-        val ssoMemberId = testAuthConfig.ssoMemberId
+        val memberInfo = memberService.getBySSOMemberId(adminConfig.ssoMemberId)
+            ?: throw BadDataMeaningException("관리자 인증 대상 회원을 찾을 수 없습니다.")
 
-        val memberInfo = memberService.getBySSOMemberId(ssoMemberId)
-            ?: throw BadDataMeaningException("테스트 인증 대상 회원을 찾을 수 없습니다.")
+        if (memberInfo.role != Role.ADMIN) {
+            throw BadDataMeaningException("관리자 인증 대상 회원의 역할이 ADMIN이 아닙니다.")
+        }
 
         val refreshToken = jwtUtil.generateRefreshToken(memberInfo)
         val refreshTokenId = jwtUtil.extractTokenId(refreshToken)
             ?: throw InternalServerException(IllegalStateException("발급한 refresh token에서 jti 추출 실패"))
 
-        refreshTokenRepository.save(memberInfo.id, refreshTokenId)
+        refreshTokenRepository.save(memberInfo.id, refreshTokenId, authPolicyConfig.refreshTokenTTL)
 
         return AuthTokenDTO(
             accessToken = jwtUtil.generateAccessToken(memberInfo),
             refreshToken = refreshToken,
         )
+    }
+
+    fun logout(refreshToken: String?) {
+        if (refreshToken.isNullOrBlank() || !jwtUtil.validateRefreshToken(refreshToken)) {
+            return
+        }
+
+        val memberId = jwtUtil.extractId(refreshToken) ?: return
+        val tokenId = jwtUtil.extractTokenId(refreshToken) ?: return
+
+        runCatching {
+            refreshTokenRepository.deleteIfMatches(memberId, tokenId)
+        }.onFailure { exception ->
+            logger.warn(exception) { "refresh token 로그아웃 폐기 실패 -> memberId: $memberId, tokenId: $tokenId" }
+        }
     }
 
     fun cleanupExpiredGuests() {
