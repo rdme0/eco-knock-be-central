@@ -8,7 +8,7 @@ import org.springframework.transaction.event.TransactionPhase
 import org.springframework.transaction.event.TransactionalEventListener
 
 @Component
-class MemberCreatedEventListener(
+class MemberCreatedEventOverviewListener(
     private val overviewService: OverviewService,
 ) {
     companion object {
@@ -16,11 +16,11 @@ class MemberCreatedEventListener(
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    fun initOverviewShortcuts(event: MemberCreatedEvent) {
+    fun initializeOverview(event: MemberCreatedEvent) {
         try {
-            overviewService.initOverviewShortcuts(event.memberId)
+            overviewService.initializeOverview(event.memberId)
         } catch (e: Exception) {
-            logger.error(e) { "신규 회원 default overview shortcut 초기화 실패: memberId=${event.memberId}" }
+            logger.error(e) { "신규 회원 overview 초기화 실패: memberId=${event.memberId}" }
         }
     }
 }
