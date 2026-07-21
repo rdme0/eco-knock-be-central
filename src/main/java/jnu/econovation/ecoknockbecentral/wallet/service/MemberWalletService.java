@@ -2,11 +2,6 @@ package jnu.econovation.ecoknockbecentral.wallet.service;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
-import java.security.GeneralSecurityException;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
 import jnu.econovation.ecoknockbecentral.common.exception.server.InternalServerException;
 import jnu.econovation.ecoknockbecentral.member.model.entity.Member;
 import jnu.econovation.ecoknockbecentral.member.model.vo.Role;
@@ -22,6 +17,13 @@ import org.web3j.crypto.Credentials;
 import org.web3j.crypto.ECKeyPair;
 import org.web3j.crypto.Keys;
 import org.web3j.utils.Numeric;
+
+import java.security.GeneralSecurityException;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+
 
 @Service
 public class MemberWalletService {
@@ -66,7 +68,7 @@ public class MemberWalletService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public int createManagedWalletsForExistingMembers() {
         List<Long> memberIds = memberRepository.findAll().stream()
-                .filter(member -> member.getRole() != Role.GUEST)
+                .filter(member -> member.getRole() != Role.GUEST) //이미 존재하는 회원 중 게스트는 지갑 생성 차단
                 .map(Member::getId)
                 .sorted(Comparator.naturalOrder())
                 .toList();

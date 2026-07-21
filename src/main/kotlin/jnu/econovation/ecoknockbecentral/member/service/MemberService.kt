@@ -34,7 +34,9 @@ class MemberService(
             .build()
 
         repository.save(member)
-        eventPublisher.publishEvent(MemberCreatedEvent(member.id))
+        eventPublisher.publishEvent(
+            MemberCreatedEvent(memberId = member.id, role = member.role)
+        )
 
         return MemberInfoDTO.from(member)
     }
@@ -43,6 +45,9 @@ class MemberService(
     fun createGuest(guestExpiresAt: Instant): MemberInfoDTO {
         val member = Member.createGuest(guestExpiresAt)
         repository.save(member)
+        eventPublisher.publishEvent(
+            MemberCreatedEvent(memberId = member.id, role = member.role)
+        )
 
         return MemberInfoDTO.from(member)
     }
