@@ -32,7 +32,7 @@ class MemberController(
     @GetMapping(produces = [MediaType.APPLICATION_JSON_VALUE])
     @Operation(
         summary = "내 프로필 조회",
-        description = "일반 회원 또는 관리자로 인증된 accessToken의 역할, 기수, 이름, 활동 상태를 조회합니다. 게스트는 사용할 수 없습니다.",
+        description = "게스트, 일반 회원 또는 관리자로 인증된 accessToken의 역할, 기수, 이름, 활동 상태를 조회합니다. 게스트의 기수와 활동 상태는 null입니다.",
         responses = [
             ApiResponse(responseCode = "200", description = "프로필 조회 성공"),
             ApiResponse(

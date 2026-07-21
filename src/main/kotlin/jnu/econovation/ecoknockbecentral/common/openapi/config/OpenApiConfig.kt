@@ -54,6 +54,10 @@ class OpenApiConfig {
                 example(ErrorCode.BAD_DATA_MEANING, "sortOrder는 중복될 수 없습니다.")
             )
             components.addExamples(
+                OpenApiConstants.OVERVIEW_LAYOUT_GRID_SIZE_CONFLICT_EXAMPLE_NAME,
+                example(ErrorCode.OVERVIEW_LAYOUT_GRID_SIZE_CONFLICT, "이미 3 크기의 그리드가 적용되어 있습니다.")
+            )
+            components.addExamples(
                 OpenApiConstants.INVALID_REDIRECT_URI_EXAMPLE_NAME,
                 example(ErrorCode.INVALID_REDIRECT_URI)
             )

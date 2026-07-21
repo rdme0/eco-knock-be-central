@@ -17,7 +17,10 @@ Use this skill when working on application code in `eco-knock-be-central`.
 - Keep JPA entities in Java under `{domain}/model/entity`.
 - Keep enums/value objects stored by entities in Java under `{domain}/model/vo`.
 - Do not create `policy`, `evaluator`, `manager`, `helper`, or similar indirection unless reuse or complexity clearly justifies it.
+- Do not extract a private helper used once when it only wraps a simple lookup, exception, or value conversion. Keep it in the calling flow. Extract only for real reuse, an independently complex domain decision, or a clear transaction boundary.
 - Keep simple domain decisions inside the owning service as private methods.
+- A service may directly use only repositories owned by its own domain. For another domain's entity or persistence operation, call that domain's service; do not inject or call its repository directly.
+- Do not bypass an expected service-to-service circular dependency by directly injecting another domain's repository. State the two services and required operation, then ask the developer whether to move the responsibility or introduce an explicit orchestration boundary.
 - Do not make production methods `public`, `internal`, companion/static, or otherwise wider only to test private implementation.
 - Do not use `runBlocking` in Spring controllers, services, or schedulers.
 - With blocking gRPC stubs, expose normal functions for normal Spring code. Use `suspend` only for APIs intended to be called from coroutine loops.
@@ -53,9 +56,46 @@ Special cases:
 ## Implementation Style
 
 - Keep controllers thin: bind input, delegate to service, return `CommonResponse` or a view.
-- Keep repositories behind services. Controllers should not call repositories directly.
+- Keep repositories behind services. Controllers should not call repositories directly, and services may use only their own-domain repositories.
 - Put `@Transactional` on services, not controllers.
 - Prefer direct, explicit branches over clever maps or generic helpers.
+- Prefer a direct lookup after an already-resolved domain object over a one-use wrapper method:
+
+```kotlin
+// Bad: called once and only hides a lookup plus exception.
+private fun getOverviewLayoutOrThrow(memberId: Long): OverviewLayout {
+    return overviewLayoutRepository.findByMemberId(memberId)
+        ?: throw InternalServerException(...)
+}
+```
+
+```kotlin
+// Good: keep the simple operation in the calling flow.
+val layout = overviewLayoutRepository.findByMemberId(member.id)
+    ?: throw InternalServerException(
+        IllegalStateException("id가 ${member.id}인 overview layout을 찾을 수 없음.")
+    )
+```
+
+- Use the owning service for cross-domain access:
+
+```kotlin
+// Bad: OverviewService directly depends on the member domain repository.
+class OverviewService(
+    private val memberRepository: MemberRepository,
+    private val overviewLayoutRepository: OverviewLayoutRepository,
+)
+```
+
+```kotlin
+// Good: OverviewService accesses Member through MemberService.
+val member = memberService.getEntityOrThrow(memberInfo.id)
+val layout = overviewLayoutRepository.findByMemberId(member.id)
+    ?: throw InternalServerException(
+        IllegalStateException("id가 ${member.id}인 overview layout을 찾을 수 없음.")
+    )
+```
+
 - Avoid silent correction of invalid input. Throw the owning domain exception.
 - Keep request-specific validation in request DTOs.
 - Prefer `TargetType.from(source)` factories for DTO conversion.

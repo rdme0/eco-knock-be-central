@@ -26,7 +26,7 @@ class AdminInitializer(
             upsertSystemAdmin()
         }
 
-        overviewService.initOverviewShortcuts(SYSTEM_ADMIN_MEMBER_ID)
+        overviewService.initializeOverview(SYSTEM_ADMIN_MEMBER_ID)
     }
 
     private fun deleteReservedMemberData() {
@@ -34,6 +34,11 @@ class AdminInitializer(
 
         jdbcTemplate.update(
             "delete from overview_shortcut where member_id in ($reservedMemberIds)",
+            SYSTEM_ADMIN_MEMBER_ID,
+            SYSTEM_ADMIN_SSO_MEMBER_ID,
+        )
+        jdbcTemplate.update(
+            "delete from overview_layout where member_id in ($reservedMemberIds)",
             SYSTEM_ADMIN_MEMBER_ID,
             SYSTEM_ADMIN_SSO_MEMBER_ID,
         )

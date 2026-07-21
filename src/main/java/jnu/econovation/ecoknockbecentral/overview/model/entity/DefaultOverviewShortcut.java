@@ -16,7 +16,7 @@ public class DefaultOverviewShortcut extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @AttributeOverride(name = "value", column = @Column(name = "icon_url", nullable = false, length = 2048))
+    @AttributeOverride(name = "value", column = @Column(name = "icon_url", length = 2048))
     private ValidHttpUrl iconUrl;
 
     @AttributeOverride(name = "value", column = @Column(name = "target_url", nullable = false, length = 2048))
