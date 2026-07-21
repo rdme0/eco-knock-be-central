@@ -51,19 +51,34 @@ class GuestAuthorizationE2ETest(
     }
 
     @Test
-    @DisplayName("게스트는 allowlist에 등록된 바로가기 조회만 할 수 있다")
-    fun guestCanReadOnlyAllowlistedEndpoint() {
+    @DisplayName("게스트는 자신의 overview를 조회·수정·초기화할 수 있지만 회원 전용 기능은 사용할 수 없다")
+    fun guestCanManageOwnOverviewButNotRestrictedFeatures() {
         val accessToken = createGuestAccessToken()
 
-        val overviewStatus = requestStatus("/overview/shortcuts", accessToken)
-        val aiStatus = requestStatus("/ai/chat", accessToken, org.springframework.http.HttpMethod.POST)
-        val updateStatus = requestStatus("/overview/shortcuts", accessToken, org.springframework.http.HttpMethod.PUT)
+        val shortcutUpdateStatus = requestPutStatus(
+            "/overview/shortcuts",
+            accessToken,
+            """{"shortcuts":[{"iconUrl":null,"targetUrl":"https://guest.example.com","sortOrder":0,"name":"게스트 바로가기"}]}""",
+        )
+        val updatedShortcuts = requestBody("/overview/shortcuts", accessToken)
+        val resetStatus = requestStatus("/overview/shortcuts/reset", accessToken, org.springframework.http.HttpMethod.PUT)
         val layoutUpdateStatus = requestPutStatus("/overview/layout", accessToken, """{"gridSize":2}""")
+        val updatedLayout = requestBody("/overview/shortcuts", accessToken)
 
-        assertThat(overviewStatus).isEqualTo(HttpStatus.OK)
+        val aiStatus = requestStatus("/ai/chat", accessToken, org.springframework.http.HttpMethod.POST)
+        val walletStatus = requestStatus("/wallet/me", accessToken)
+        val adminStatus = requestStatus("/admin", accessToken)
+        val unregisteredAdminStatus = requestStatus("/admin/not-registered", accessToken)
+
+        assertThat(shortcutUpdateStatus).isEqualTo(HttpStatus.OK)
+        assertThat(updatedShortcuts).contains("\"name\":\"게스트 바로가기\"")
+        assertThat(resetStatus).isEqualTo(HttpStatus.OK)
+        assertThat(layoutUpdateStatus).isEqualTo(HttpStatus.OK)
+        assertThat(updatedLayout).contains("\"gridSize\":2")
         assertThat(aiStatus).isEqualTo(HttpStatus.FORBIDDEN)
-        assertThat(updateStatus).isEqualTo(HttpStatus.FORBIDDEN)
-        assertThat(layoutUpdateStatus).isEqualTo(HttpStatus.FORBIDDEN)
+        assertThat(walletStatus).isEqualTo(HttpStatus.FORBIDDEN)
+        assertThat(adminStatus).isEqualTo(HttpStatus.FORBIDDEN)
+        assertThat(unregisteredAdminStatus).isEqualTo(HttpStatus.FORBIDDEN)
     }
 
     @Test
@@ -74,6 +89,7 @@ class GuestAuthorizationE2ETest(
 
         assertThat(requestPutStatus("/overview/layout", user, """{"gridSize":2}""")).isEqualTo(HttpStatus.OK)
         assertThat(requestPutStatus("/overview/layout", admin, """{"gridSize":2}""")).isEqualTo(HttpStatus.OK)
+        assertThat(requestStatus("/admin/not-registered", user)).isEqualTo(HttpStatus.FORBIDDEN)
     }
 
     private fun createGuestAccessToken(): String {
@@ -119,5 +135,14 @@ class GuestAuthorizationE2ETest(
             .uri(path)
             .header(HttpHeaders.COOKIE, "$ACCESS_TOKEN=$accessToken")
             .exchange { _, response -> HttpStatus.valueOf(response.statusCode.value()) }
+    }
+
+    private fun requestBody(path: String, accessToken: String): String {
+        return restClient.get()
+            .uri(path)
+            .header(HttpHeaders.COOKIE, "$ACCESS_TOKEN=$accessToken")
+            .exchange { _, response ->
+                String(response.body.readAllBytes(), Charsets.UTF_8)
+            }
     }
 }
