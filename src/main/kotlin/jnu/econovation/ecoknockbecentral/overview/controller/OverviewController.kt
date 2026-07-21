@@ -37,7 +37,7 @@ class OverviewController(private val service: OverviewService) {
     @GetMapping(produces = [MediaType.APPLICATION_JSON_VALUE])
     @Operation(
         summary = "내 모아두기 바로가기 조회",
-        description = "현재 로그인한 사용자 또는 게스트의 모아두기 gridSize(2 또는 3)와 바로가기 목록을 조회합니다. 게스트는 읽기만 가능합니다.",
+        description = "현재 로그인한 사용자 또는 게스트의 모아두기 gridSize(2 또는 3)와 바로가기 목록을 조회합니다.",
         responses = [
             ApiResponse(responseCode = "200", description = "조회 성공"),
             ApiResponse(
@@ -62,7 +62,7 @@ class OverviewController(private val service: OverviewService) {
     )
     @Operation(
         summary = "내 모아두기 바로가기 수정",
-        description = "현재 로그인한 사용자의 모아두기 바로가기 목록을 요청 body 기준으로 교체합니다.",
+        description = "현재 로그인한 사용자 또는 게스트의 모아두기 바로가기 목록을 요청 body 기준으로 교체합니다.",
         responses = [
             ApiResponse(
                 responseCode = "200",
@@ -99,11 +99,6 @@ class OverviewController(private val service: OverviewService) {
                     examples = [ExampleObject(name = BAD_DATA_MEANING_EXAMPLE_NAME, ref = BAD_DATA_MEANING_EXAMPLE_REF)]
                 )]
             ),
-            ApiResponse(
-                responseCode = "403",
-                description = "게스트는 바로가기를 수정할 수 없음",
-                content = [Content()]
-            )
         ]
     )
     fun updateShortcuts(
@@ -117,7 +112,7 @@ class OverviewController(private val service: OverviewService) {
     @PutMapping("/reset", produces = [MediaType.APPLICATION_JSON_VALUE])
     @Operation(
         summary = "내 모아두기 바로가기 초기화",
-        description = "현재 로그인한 사용자의 모아두기 바로가기를 기본값으로 초기화합니다.",
+        description = "현재 로그인한 사용자 또는 게스트의 모아두기 바로가기를 기본값으로 초기화합니다.",
         responses = [
             ApiResponse(
                 responseCode = "200",
@@ -138,11 +133,6 @@ class OverviewController(private val service: OverviewService) {
                     examples = [ExampleObject(name = UNAUTHORIZED_EXAMPLE_NAME, ref = UNAUTHORIZED_EXAMPLE_REF)]
                 )]
             ),
-            ApiResponse(
-                responseCode = "403",
-                description = "게스트는 바로가기를 초기화할 수 없음",
-                content = [Content()]
-            )
         ]
     )
     fun resetShortcutsToDefault(

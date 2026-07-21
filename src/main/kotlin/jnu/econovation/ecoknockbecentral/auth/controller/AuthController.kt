@@ -112,7 +112,7 @@ class AuthController(
     @PostMapping("/guest")
     @Operation(
         summary = "게스트 로그인",
-        description = "임시 게스트 회원을 생성하고 24시간 동안 유효한 세션 쿠키를 발급합니다. 게스트는 허용된 조회 API만 사용할 수 있습니다.",
+        description = "임시 게스트 회원을 생성하고 24시간 동안 유효한 세션 쿠키를 발급합니다. 게스트는 프로필·overview 조회와 자신의 overview 수정·초기화·grid size 변경을 사용할 수 있습니다.",
         security = [],
         responses = [
             ApiResponse(responseCode = "204", description = "게스트 로그인 성공", content = [Content()]),

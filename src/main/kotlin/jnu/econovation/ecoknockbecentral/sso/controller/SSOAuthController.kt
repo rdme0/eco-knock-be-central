@@ -159,6 +159,10 @@ class SSOAuthController(
         response.sendRedirect(frontendRedirectUrl)
     }
 
+    /**
+     * Gateway upstream 전용 endpoint입니다. Gateway를 우회한 직접 접근은 네트워크 또는 프록시에서 차단해야 합니다.
+     * Passport roles는 서비스의 Member.role에 반영하지 않습니다.
+     */
     @Hidden
     @PostMapping("/passport", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun passport(
