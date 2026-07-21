@@ -574,7 +574,7 @@ SSO 로그인 후 관리자 접근 여부는 SSO role이 아니라 프로젝트 
 
 ## API 문서
 
-- Scalar UI: `/scalar`
+- Scalar UI: [https://eco-knock.isek-ai.org/scalar](https://eco-knock.isek-ai.org/scalar)
 - OpenAPI JSON: `/v3/api-docs`
 - OpenAPI YAML: `/v3/api-docs.yaml`
 
