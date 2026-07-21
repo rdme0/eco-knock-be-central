@@ -26,13 +26,13 @@ import java.io.IOException;
 
 import static jnu.econovation.ecoknockbecentral.common.constant.CommonConstant.criticalError;
 import static jnu.econovation.ecoknockbecentral.auth.constant.AuthConstant.ACCESS_TOKEN;
+import static jnu.econovation.ecoknockbecentral.common.security.constant.SecurityPath.ADMIN;
+import static jnu.econovation.ecoknockbecentral.common.security.constant.SecurityPath.ADMIN_LOGIN;
+import static jnu.econovation.ecoknockbecentral.common.security.constant.SecurityPath.ADMIN_SLASH;
 
 @Component
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
-    private static final String ADMIN_PATH = "/admin";
-    private static final String ADMIN_PATH_PREFIX = "/admin/";
-
     private final AuthPolicyResolver policyResolver;
     private final JwtAuthHelper helper;
     private final Rest401Handler rest401Handler;
@@ -87,7 +87,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (e instanceof AuthenticationException authenticationException) {
             CookieUtil.removeCookie(request, response, ACCESS_TOKEN);
             if (isAdminPageRequest(request)) {
-                response.sendRedirect("/admin/login");
+                response.sendRedirect(ADMIN_LOGIN);
                 return;
             }
             rest401Handler.commence(request, response, authenticationException);
@@ -105,6 +105,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private boolean isAdminPageRequest(HttpServletRequest request) {
         String uri = request.getRequestURI();
-        return ADMIN_PATH.equals(uri) || uri.startsWith(ADMIN_PATH_PREFIX);
+        return ADMIN.equals(uri) || uri.startsWith(ADMIN_SLASH);
     }
 }

@@ -22,7 +22,6 @@ import jnu.econovation.ecoknockbecentral.overview.dto.request.UpdateDefaultShort
 import jnu.econovation.ecoknockbecentral.overview.service.OverviewService
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
-import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.*
@@ -39,7 +38,6 @@ class AdminOverviewShortcutController(
     }
 
     @GetMapping("/overview-shortcuts")
-    @PreAuthorize("hasRole('ADMIN')")
     @Hidden
     fun editOverviewShortcuts(model: Model): String {
         if (!model.containsAttribute("rows")) {
@@ -58,7 +56,6 @@ class AdminOverviewShortcutController(
         consumes = [MediaType.APPLICATION_JSON_VALUE],
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
-    @PreAuthorize("hasRole('ADMIN')")
     @ResponseBody
     @Operation(
         summary = "기본 모아두기 수정",

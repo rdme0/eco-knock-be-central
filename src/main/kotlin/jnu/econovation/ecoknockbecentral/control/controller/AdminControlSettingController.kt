@@ -21,13 +21,11 @@ import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstant
 import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.UNAUTHORIZED_EXAMPLE_NAME
 import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.UNAUTHORIZED_EXAMPLE_REF
 import org.springframework.http.MediaType
-import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.*
 
 @Controller
 @RequestMapping("/admin/control-settings")
-@PreAuthorize("hasRole('ADMIN')")
 @Tag(name = "Admin", description = "관리자 JSON API")
 @SecurityRequirement(name = ACCESS_TOKEN_SECURITY_SCHEME_NAME)
 class AdminControlSettingController(
