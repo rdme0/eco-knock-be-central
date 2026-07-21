@@ -32,8 +32,8 @@ data class UpdateOverviewShortcutRequest(
 }
 
 data class UpdateShortcutDTO(
-    @field:Schema(description = "아이콘 이미지 URL. http 또는 https만 허용", example = "https://example.com/icon.png")
-    val iconUrl: ValidHttpUrl,
+    @field:Schema(description = "아이콘 이미지 URL. 없으면 null", example = "https://example.com/icon.png", nullable = true)
+    val iconUrl: ValidHttpUrl?,
     @field:Schema(description = "이동 대상 URL. http 또는 https만 허용", example = "https://example.com")
     val targetUrl: ValidHttpUrl,
     @field:Schema(description = "정렬 순서. 0부터 N-1까지 중복 없이 연속되어야 함", minimum = "0", example = "0")

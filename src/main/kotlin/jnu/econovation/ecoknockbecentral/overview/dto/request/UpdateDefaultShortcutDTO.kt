@@ -34,8 +34,8 @@ data class ReplaceDefaultOverviewShortcutsRequest(
 }
 
 data class UpdateDefaultShortcutDTO(
-    @field:Schema(description = "아이콘 이미지 URL. http 또는 https만 허용", example = "https://example.com/icon.png")
-    val iconUrl: ValidHttpUrl,
+    @field:Schema(description = "아이콘 이미지 URL. 없으면 null", example = "https://example.com/icon.png", nullable = true)
+    val iconUrl: ValidHttpUrl?,
     @field:Schema(description = "이동 대상 URL. http 또는 https만 허용", example = "https://example.com")
     val targetUrl: ValidHttpUrl,
     @field:Schema(description = "바로가기 이름. 공백 불가, 최대 10자", example = "홈페이지")
@@ -48,7 +48,7 @@ data class UpdateDefaultShortcutDTO(
 
         fun from(response: GetDefaultOverviewShortcutResponse): UpdateDefaultShortcutDTO {
             return UpdateDefaultShortcutDTO(
-                iconUrl = ValidHttpUrl(response.iconUrl),
+                iconUrl = response.iconUrl?.let(::ValidHttpUrl),
                 targetUrl = ValidHttpUrl(response.targetUrl),
                 name = response.name,
                 sortOrder = response.sortOrder,
