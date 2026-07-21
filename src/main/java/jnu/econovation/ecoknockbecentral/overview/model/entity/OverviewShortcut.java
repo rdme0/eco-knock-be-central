@@ -21,7 +21,7 @@ public class OverviewShortcut extends BaseEntity {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-    @AttributeOverride(name = "value", column = @Column(name = "icon_url", nullable = false, length = 2048))
+    @AttributeOverride(name = "value", column = @Column(name = "icon_url", length = 2048))
     private ValidHttpUrl iconUrl;
 
     @AttributeOverride(name = "value", column = @Column(name = "target_url", nullable = false, length = 2048))

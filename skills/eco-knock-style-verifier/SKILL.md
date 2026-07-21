@@ -34,15 +34,41 @@ For each section below, report `PASS`, `FAIL`, or `N/A` with one concise evidenc
 
 | Maintainer section | Verify |
 | --- | --- |
-| Hard Rules | Nearby-code inspection, role-package placement, domain-language boundary, unnecessary indirection, visibility, `runBlocking`, blocking gRPC, and preservation of pre-existing worktree changes. |
+| Hard Rules | Nearby-code inspection, role-package placement, domain-language boundary, one-use simple helper extraction, visibility, `runBlocking`, blocking gRPC, cross-domain repository access, circular-dependency bypass, and preservation of pre-existing worktree changes. |
 | Package Style | Layer ownership and dependency direction; normal-domain layering, `airquality` CQRS boundary, `common`, and integration package conventions. |
 | Language Rules | Java/Kotlin choice, Java entity/VO/enum boundary, Java security/infrastructure boundary, Kotlin constructor and companion-object conventions. |
-| Implementation Style | Controller/service/repository boundaries, transactions, validation and mapping placement, configuration/redirect behavior, and scheduler/background-flow behavior. |
+| Implementation Style | Controller/service/repository boundaries, including services using only their own-domain repositories; transactions, validation and mapping placement, configuration/redirect behavior, and scheduler/background-flow behavior. |
 | Persistence And Migrations | Entity/schema change, next Flyway migration, naming, index, and foreign-key requirements. |
 | Testing | Static review of public-behavior coverage, E2E conventions, mocks, secret handling, and developer-provided test commands/results; never execute tests. |
 | Domain Notes | Apply only the notes for each changed domain; report `N/A` when no domain note applies. |
 
 Do not duplicate or invent style rules outside `$eco-knock-maintainer`. If the maintainer and the closest local precedent genuinely conflict, report `risk` with both sources rather than choosing a new rule.
+
+## Responsibility-boundary findings
+
+- Flag as `blocking` when a single-use private helper merely wraps a simple repository lookup, exception, or value conversion. Recommend inlining it into the existing calling flow unless the diff establishes reuse, an independently complex domain decision, or a transaction boundary.
+- Flag as `blocking` when a service injects or calls a repository owned by another domain. Recommend the owning service's public domain operation instead.
+- Flag as `blocking` when a direct cross-domain repository reference is used to avoid an otherwise expected service circular dependency.
+- If resolving the circular dependency needs a responsibility move or orchestration boundary that is not unambiguously determined by the requirement and nearby code, report `risk` with `automatic-refactor: no`. Identify the involved services and operation, and require a developer decision; do not prescribe a repository-access workaround.
+
+Examples to apply during review:
+
+```kotlin
+// Bad: a helper used once only hides this lookup and exception.
+private fun getOverviewLayoutOrThrow(memberId: Long): OverviewLayout = ...
+
+// Good: keep the direct operation in its existing calling flow.
+val layout = overviewLayoutRepository.findByMemberId(member.id)
+    ?: throw InternalServerException(
+        IllegalStateException("id가 ${member.id}인 overview layout을 찾을 수 없음.")
+    )
+
+// Bad: OverviewService must not inject MemberRepository.
+class OverviewService(private val memberRepository: MemberRepository)
+
+// Good: OverviewService accesses Member through MemberService.
+val member = memberService.getEntityOrThrow(memberInfo.id)
+```
 
 ## Verdict format
 

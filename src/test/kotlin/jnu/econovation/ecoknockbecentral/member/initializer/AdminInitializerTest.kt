@@ -83,15 +83,31 @@ class AdminInitializerTest(
         assertThat(admin.ssoMemberId).isEqualTo(SYSTEM_ADMIN_SSO_MEMBER_ID)
         assertThat(admin.role).isEqualTo(Role.ADMIN)
         assertThat(memberRepository.findById(reservedSsoMember.id)).isEmpty
-        assertThat(jdbcTemplate.queryForObject("select count(*) from ai_chat_history", Int::class.java)).isZero
-        assertThat(jdbcTemplate.queryForObject("select count(*) from member_wallet", Int::class.java)).isZero
+        assertThat(
+            jdbcTemplate.queryForObject(
+                "select count(*) from ai_chat_history where member_id in (?, ?)",
+                Int::class.java,
+                SYSTEM_ADMIN_MEMBER_ID,
+                reservedSsoMember.id,
+            )
+        ).isZero
+        assertThat(
+            jdbcTemplate.queryForObject(
+                "select count(*) from member_wallet where member_id in (?, ?)",
+                Int::class.java,
+                SYSTEM_ADMIN_MEMBER_ID,
+                reservedSsoMember.id,
+            )
+        ).isZero
         assertThat(overviewCount).isEqualTo(defaultOverviewCount)
+        assertThat(jdbcTemplate.queryForObject("select count(*) from overview_layout where member_id = ?", Int::class.java, SYSTEM_ADMIN_MEMBER_ID)).isEqualTo(1)
 
         memberWalletService.createManagedWalletIfAbsent(SYSTEM_ADMIN_MEMBER_ID)
     }
 
     private fun removeSystemAdmin() {
         jdbcTemplate.update("delete from overview_shortcut where member_id = ?", SYSTEM_ADMIN_MEMBER_ID)
+        jdbcTemplate.update("delete from overview_layout where member_id = ?", SYSTEM_ADMIN_MEMBER_ID)
         jdbcTemplate.update("delete from ai_chat_history where member_id = ?", SYSTEM_ADMIN_MEMBER_ID)
         jdbcTemplate.update("delete from member_wallet where member_id = ?", SYSTEM_ADMIN_MEMBER_ID)
         jdbcTemplate.update("delete from member where id = ?", SYSTEM_ADMIN_MEMBER_ID)
@@ -108,6 +124,10 @@ class AdminInitializerTest(
     }
 
     private fun insertMemberData(memberId: Long, suffix: String) {
+        jdbcTemplate.update(
+            "insert into overview_layout (member_id, grid_size) values (?, 3)",
+            memberId,
+        )
         jdbcTemplate.update(
             """
             insert into overview_shortcut (member_id, icon_url, target_url, sort_order, name)

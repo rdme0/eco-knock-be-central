@@ -36,6 +36,9 @@ public enum ErrorCode {
     MEMBER_DUPLICATED_FIELD(Domain.MEMBER, HttpStatus.CONFLICT, 1, "이미 사용중인 %s 입니다."),
     ALREADY_COMPLETED_REGISTRATION(Domain.MEMBER, HttpStatus.CONFLICT, 2, "이미 가입이 완료된 회원입니다."),
 
+    // --- OVERVIEW ---
+    OVERVIEW_LAYOUT_GRID_SIZE_CONFLICT(Domain.OVERVIEW, HttpStatus.CONFLICT, 1, "이미 %d 크기의 그리드가 적용되어 있습니다."),
+
     // --- WALLET ---
     WALLET_NOT_FOUND(Domain.WALLET, HttpStatus.NOT_FOUND, 1, "활성 보상 지갑을 찾을 수 없습니다."),
 
