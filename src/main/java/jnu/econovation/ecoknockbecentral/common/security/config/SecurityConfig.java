@@ -1,9 +1,9 @@
 package jnu.econovation.ecoknockbecentral.common.security.config;
 
+import jakarta.servlet.http.HttpServletResponse;
+import jnu.econovation.ecoknockbecentral.common.security.filter.ApiDocAccessFilter;
 import jnu.econovation.ecoknockbecentral.common.security.filter.JwtAuthFilter;
 import jnu.econovation.ecoknockbecentral.common.security.filter.SSORedirectParamFilter;
-import jnu.econovation.ecoknockbecentral.common.security.filter.ApiDocAccessFilter;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -99,6 +99,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/auth/guest").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/admin").permitAll()
                         .requestMatchers(HttpMethod.GET, "/air-quality/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/profile").hasAnyRole("GUEST", "USER", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/overview/shortcuts").hasAnyRole("GUEST", "USER", "ADMIN")
                         .anyRequest().hasAnyRole("USER", "ADMIN")
                 )
