@@ -62,8 +62,8 @@ flowchart LR
 - auth-econovation APP SSO 로그인과 HttpOnly JWT 쿠키 인증
 - `GUEST` 게스트 로그인과 24시간 하드 만료 세션
 - IP별 시간당 5회 게스트 로그인 제한
-- 게스트가 접근할 수 있는 조회 API allowlist
-- 사용자 overview shortcut 조회·수정·기본값 재설정 및 grid size 변경
+- 게스트 역할별 API allowlist
+- 사용자·게스트 overview shortcut 조회·수정·기본값 재설정 및 grid size 변경
 - 텍스트 전용 AI 채팅과 최근 대화 최대 20쌍 전달
 - AI 응답의 채팅 이력 및 원본 응답 저장
 - 관리자 default shortcut·자동제어 정책·API 문서 공개 상태 관리
@@ -407,9 +407,9 @@ sequenceDiagram
 
 ### Overview 바로가기와 레이아웃
 
-`GET /overview/shortcuts`는 인증한 회원 또는 게스트의 `gridSize`와 바로가기 목록을 반환합니다. 바로가기의 `iconUrl`은 선택값이므로 이미지가 없으면 `null`입니다. 게스트는 이 조회만 허용되며 바로가기·레이아웃 수정과 초기화는 할 수 없습니다.
+`GET /overview/shortcuts`는 인증한 회원 또는 게스트의 `gridSize`와 바로가기 목록을 반환합니다. 바로가기의 `iconUrl`은 선택값이므로 이미지가 없으면 `null`입니다. 게스트도 자신의 바로가기와 레이아웃을 수정하고 기본값으로 초기화할 수 있습니다.
 
-`PUT /overview/layout`은 일반 회원과 관리자만 `{"gridSize":2}` 또는 `{"gridSize":3}`으로 자신의 그리드 열 수를 변경합니다. 현재 값과 같은 크기를 요청하면 `409 Conflict`를 반환합니다.
+`PUT /overview/shortcuts`는 일반 회원·관리자·게스트의 바로가기 목록을 전체 교체하고, `PUT /overview/shortcuts/reset`은 기본 바로가기로 초기화합니다. `PUT /overview/layout`은 `{"gridSize":2}` 또는 `{"gridSize":3}`으로 자신의 그리드 열 수를 변경합니다. 현재 값과 같은 크기를 요청하면 `409 Conflict`를 반환합니다.
 
 ### 회원 관리형 지갑
 
@@ -445,9 +445,9 @@ sequenceDiagram
 | 공기질 | `GET` | `/air-quality/timeseries/history` | 공기질 과거 데이터 조회 |
 | 공기질 | `GET` | `/air-quality/stream` | 공기질 SSE 스트림 |
 | 바로가기 | `GET` | `/overview/shortcuts` | 사용자·게스트 바로가기와 grid size 조회 (`iconUrl`은 null 가능) |
-| 바로가기 | `PUT` | `/overview/shortcuts` | 사용자 바로가기 전체 교체 |
-| 바로가기 | `PUT` | `/overview/shortcuts/reset` | 기본 바로가기 재설정 |
-| 바로가기 | `PUT` | `/overview/layout` | 일반 회원·관리자의 grid size 수정 (동일 값은 `409`) |
+| 바로가기 | `PUT` | `/overview/shortcuts` | 사용자·게스트 바로가기 전체 교체 |
+| 바로가기 | `PUT` | `/overview/shortcuts/reset` | 사용자·게스트 기본 바로가기 재설정 |
+| 바로가기 | `PUT` | `/overview/layout` | 사용자·게스트 grid size 수정 (동일 값은 `409`) |
 | AI | `POST` | `/ai/chat` | 이전 대화와 현재 질문을 이용한 AI 채팅 |
 | 지갑 | `GET` | `/wallet/me` | 현재 회원의 활성 보상 지갑 주소와 KRT 온체인 잔액 조회 |
 | 관리자 | `GET/PUT` | `/admin/api-docs-access` | API 문서 공개 상태 조회·변경 |
@@ -479,9 +479,70 @@ flowchart TD
     Policy --> Admin
 ```
 
+### SSO 로그인 전체 흐름
+
+SSO 로그인은 **브라우저가 콜백 URL을 호출하고, 백엔드가 받은 SSO 토큰을 Gateway에서 검증하는 방식**입니다. SSO 토큰 자체를 우리 서비스 API 인증에 계속 사용하지 않고, 검증이 끝난 뒤 우리 백엔드가 발급한 JWT 쿠키로 교체합니다.
+
+```mermaid
+sequenceDiagram
+    participant U as 사용자 브라우저
+    participant B as eco-knock 백엔드
+    participant S as Econovation SSO
+    participant G as Gateway
+    participant D as 중앙 백엔드 DB·Redis
+
+    U->>B: GET /sso/login?redirect=최종_이동_주소
+    B->>B: redirect 허용 목록 검증
+    B->>U: redirect 쿠키 저장
+    B-->>U: 302 SSO 로그인 페이지 이동<br/>client-id + client-type=app
+
+    U->>S: SSO 로그인
+    S->>U: 302 /sso/callback?accessToken=SSO_ACCESS_TOKEN
+    U->>B: GET /sso/callback?accessToken=...
+
+    B->>G: POST /api/eco-knock<br/>Authorization: Bearer SSO_ACCESS_TOKEN
+    G->>G: SSO access token 검증
+    G->>B: POST /sso/passport<br/>X-User-Passport: Base64 Passport
+    B->>B: Passport 해석·구조·만료 검증
+    B-->>G: memberId·name·generation·status·roles
+    G-->>B: Passport 회원 정보 응답
+
+    B->>D: ssoMemberId로 회원 조회 또는 생성
+    B->>D: refresh token jti 저장
+    B->>U: accessToken·refreshToken HttpOnly 쿠키 발급
+    B->>U: redirect 쿠키 삭제 후 최종 주소로 302
+    U->>B: 이후 API 요청에 accessToken 쿠키 포함
+```
+
+#### 단계별로 이해하기
+
+1. 프론트엔드는 백엔드의 `/sso/login?redirect=...`을 호출합니다. `redirect`는 로그인 완료 후 돌아갈 프론트 주소입니다.
+2. 백엔드는 redirect 주소가 허용 목록에 있는지 확인한 뒤, 잠시 쿠키에 저장합니다. 허용되지 않은 주소면 SSO 페이지로 보내지 않고 `400`을 반환합니다.
+3. 백엔드는 SSO 로그인 화면으로 이동시키면서 `client-type=app`을 사용합니다.
+4. 사용자가 SSO에서 로그인하면 SSO 서버가 **사용자의 브라우저**를 백엔드의 `/sso/callback`으로 다시 보냅니다. 따라서 callback은 서버가 서버를 직접 호출하는 것이 아니라 브라우저가 백엔드에 보내는 `GET` 요청입니다.
+5. 백엔드는 callback query의 SSO `accessToken`을 Gateway에 `Authorization: Bearer` 헤더로 전달합니다.
+6. Gateway는 SSO 토큰을 검증하고, 검증된 회원 정보를 `X-User-Passport` 헤더로 내부 `/sso/passport` upstream에 전달합니다.
+7. 백엔드는 Passport에서 회원 정보를 읽어 프로젝트 DB의 `ssoMemberId` 기준으로 회원을 조회하거나 생성합니다. Passport의 `roles`는 프로젝트의 `Member.role`로 변환하지 않습니다.
+8. 백엔드는 SSO 토큰이 아닌 프로젝트 자체의 access/refresh JWT를 발급하고 HttpOnly 쿠키로 브라우저에 내려줍니다.
+9. 백엔드는 처음 저장해 둔 redirect 쿠키를 삭제하고 프론트를 최종 주소로 `302` 이동시킵니다.
+10. 이후 프론트는 `credentials: 'include'`로 요청하고, 브라우저가 프로젝트 JWT 쿠키를 자동으로 전송합니다.
+
+#### 토큰별 역할
+
+| 값 | 발급 주체 | 사용 위치 | 애플리케이션이 별도로 저장하는가? |
+| --- | --- | --- | --- |
+| SSO `accessToken` | Econovation SSO | callback에서 Gateway 검증 요청 | 저장하지 않음. callback URL에 잠시 포함 |
+| `X-User-Passport` | Gateway | `/sso/passport` 내부 upstream 요청 | 저장하지 않음 |
+| 프로젝트 `accessToken` | eco-knock 백엔드 | 이후 프로젝트 API 인증 | HttpOnly 쿠키 |
+| 프로젝트 `refreshToken` | eco-knock 백엔드 | access token 재발급 | HttpOnly 쿠키 |
+
+- `/sso/passport`는 Gateway upstream 전용 경로입니다. Gateway를 우회한 직접 접근은 네트워크 또는 프록시에서 차단해야 합니다.
+- callback URL에는 SSO access token이 잠시 포함되므로 callback 응답은 `Referrer-Policy: no-referrer`를 설정합니다.
+- callback의 SSO `refreshToken`과 `accessExpiredTime`은 사용하거나 저장하지 않습니다.
+- SSO 인증이 실패하거나 Passport가 만료·손상되면 내부 access/refresh 쿠키를 발급하지 않고 오류를 반환합니다.
+
 - 일반 사용자와 관리자는 access/refresh JWT를 HttpOnly 쿠키로 사용합니다.
 - `GET /profile`은 access token으로 인증한 게스트·일반 회원·관리자의 `role`, `cohort`, `name`, `activeStatus`를 반환합니다. 게스트의 `cohort`와 `activeStatus`는 `null`입니다.
-- SSO 로그인은 `sso.login-page-base-url`의 로그인 화면으로 항상 `client-type=app`을 전달해 시작합니다. 로그인 완료 후 auth-econovation은 등록된 `/sso/callback` 주소에 `accessToken` 쿼리를 전달하고, 백엔드는 `sso.gateway-passport-url`로 `Authorization: Bearer <accessToken>`을 전송합니다. Gateway가 검증 후 내부 `/sso/passport`에 Passport를 주입하면 자체 access/refresh 쿠키를 발급합니다. callback의 `refreshToken`, `accessExpiredTime`은 사용하거나 저장하지 않습니다. callback 응답은 `Referrer-Policy: no-referrer`를 설정해 SSO 토큰이 최종 이동 요청의 Referer에 전달되지 않게 합니다.
 - Passport 연동은 [JNU-econovation/auth-common](https://github.com/JNU-econovation/auth-common)을 참고했지만, 현재 프로젝트의 Spring Boot 4와 호환되지 않아 필요한 코드를 프로젝트 내부에 직접 이식해 사용합니다. 따라서 해당 외부 라이브러리는 활성 의존성으로 사용하지 않습니다.
 - Passport의 `roles`는 프로젝트의 `Member.role`로 변환하지 않으며, 관리자 접근 여부는 프로젝트 DB의 `Member.role`로 판단합니다.
 - CSR 관리자는 `POST /auth/admin`에 JSON 본문 `{"password":"..."}`을 보내 시스템 관리자 회원의 access/refresh HttpOnly 쿠키를 발급받을 수 있습니다. 이후 `credentials: 'include'`로 관리자 JSON API와 회원 정보 API를 호출할 수 있습니다.
@@ -489,9 +550,9 @@ flowchart TD
 - 게스트는 `POST /auth/guest`로 `GUEST` 회원과 session cookie를 발급받습니다.
 - 게스트 세션은 최초 발급 시각부터 최대 24시간만 유효합니다. 재발급해도 만료 시각은 연장되지 않습니다.
 - 게스트 로그인은 IP별 시간당 5회로 제한되며 Redis Lua script로 횟수를 원자적으로 증가시킵니다.
-- 게스트는 명시적으로 허용된 `GET /profile`과 `GET /overview/shortcuts`에 접근할 수 있으며, `GET /overview/shortcuts` 응답에서 grid size를 함께 조회합니다.
+- 게스트는 `GET /profile`, `GET /overview/shortcuts`로 자신의 정보를 조회하고, `PUT /overview/shortcuts`, `PUT /overview/shortcuts/reset`, `PUT /overview/layout`으로 자신의 overview를 수정·초기화할 수 있습니다.
 - 공기질 조회 API와 SSE 스트림은 별도 공개 API입니다.
-- 게스트는 `/ai/chat`, overview shortcut·layout 수정·reset, 관리자 API 등 쓰기 요청에 접근할 수 없습니다.
+- 게스트는 `/ai/chat`, `/wallet/me`, 관리자 API 등 overview 외의 회원 전용·관리자 기능에는 접근할 수 없습니다.
 - 게스트 회원은 관리형 지갑을 생성하지 않습니다.
 - 만료된 게스트 회원은 5분 주기로 정리되며, 만료된 회원의 토큰은 인증에 사용할 수 없습니다. 회원 삭제 시 wallet·overview 데이터와 AI 채팅 이력이 DB cascade 정책에 따라 함께 삭제됩니다.
 

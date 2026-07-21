@@ -39,7 +39,7 @@ class OverviewLayoutController(
     @PutMapping(consumes = [MediaType.APPLICATION_JSON_VALUE], produces = [MediaType.APPLICATION_JSON_VALUE])
     @Operation(
         summary = "내 모아두기 그리드 크기 수정",
-        description = "현재 로그인한 사용자의 모아두기 그리드 크기를 2 또는 3으로 변경합니다. 게스트는 수정할 수 없습니다.",
+        description = "현재 로그인한 사용자 또는 게스트의 모아두기 그리드 크기를 2 또는 3으로 변경합니다.",
         responses = [
             ApiResponse(
                 responseCode = "200",
@@ -55,11 +55,6 @@ class OverviewLayoutController(
                 responseCode = "401",
                 description = "인증 필요",
                 content = [Content(mediaType = MediaType.APPLICATION_JSON_VALUE, examples = [ExampleObject(name = UNAUTHORIZED_EXAMPLE_NAME, ref = UNAUTHORIZED_EXAMPLE_REF)])],
-            ),
-            ApiResponse(
-                responseCode = "403",
-                description = "게스트는 그리드 크기를 수정할 수 없음",
-                content = [Content()],
             ),
             ApiResponse(
                 responseCode = "409",

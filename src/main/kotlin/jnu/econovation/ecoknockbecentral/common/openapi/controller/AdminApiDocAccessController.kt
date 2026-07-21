@@ -17,7 +17,6 @@ import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstant
 import jnu.econovation.ecoknockbecentral.common.openapi.constant.OpenApiConstants.UNAUTHORIZED_EXAMPLE_REF
 import jnu.econovation.ecoknockbecentral.common.openapi.service.ApiDocAccessService
 import org.springframework.http.MediaType
-import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -26,7 +25,6 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/admin/api-docs-access")
-@PreAuthorize("hasRole('ADMIN')")
 @Tag(name = "Admin", description = "관리자 JSON API")
 @SecurityRequirement(name = ACCESS_TOKEN_SECURITY_SCHEME_NAME)
 class AdminApiDocAccessController(
