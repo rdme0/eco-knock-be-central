@@ -16,7 +16,7 @@ import java.util.Optional;
 import jnu.econovation.ecoknockbecentral.reward.client.RewardDistributorClient;
 import jnu.econovation.ecoknockbecentral.reward.dto.RewardRecipient;
 import jnu.econovation.ecoknockbecentral.reward.dto.RewardSettlementResult;
-import jnu.econovation.ecoknockbecentral.reward.dto.RewardTransactionResult;
+import jnu.econovation.ecoknockbecentral.reward.dto.RewardTransactionDTO;
 import jnu.econovation.ecoknockbecentral.reward.exception.RewardTransactionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,7 +54,7 @@ class RewardTransactionServiceTest {
         when(rewardDistributorClient.submit(anyString(), any(), anyList(), anyList()))
                 .thenReturn(TRANSACTION_HASH);
 
-        Optional<RewardTransactionResult> result = service.submit(settlement);
+        Optional<RewardTransactionDTO> result = service.submit(settlement);
 
         ArgumentCaptor<String> batchIdCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<BigInteger> rewardDayCaptor = ArgumentCaptor.forClass(BigInteger.class);
@@ -75,7 +75,7 @@ class RewardTransactionServiceTest {
                 TOKEN_UNIT.multiply(BigInteger.valueOf(5L)),
                 TOKEN_UNIT.multiply(BigInteger.valueOf(7L))
         );
-        assertThat(result).contains(new RewardTransactionResult(
+        assertThat(result).contains(new RewardTransactionDTO(
                 expectedBatchId,
                 new BigInteger("20260721"),
                 TRANSACTION_HASH
@@ -90,7 +90,7 @@ class RewardTransactionServiceTest {
                 0L
         );
 
-        Optional<RewardTransactionResult> result = service.submit(settlement);
+        Optional<RewardTransactionDTO> result = service.submit(settlement);
 
         assertThat(result).isEmpty();
         verifyNoInteractions(rewardDistributorClient);

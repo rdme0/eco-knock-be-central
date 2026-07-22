@@ -2,7 +2,7 @@ package jnu.econovation.ecoknockbecentral.reward.dto;
 
 import java.math.BigInteger;
 
-public record RewardTransactionResult(
+public record RewardTransactionDTO(
         String batchId,
         BigInteger rewardDay,
         String transactionHash

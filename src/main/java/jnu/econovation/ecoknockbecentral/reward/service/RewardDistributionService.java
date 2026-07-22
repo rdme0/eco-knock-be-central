@@ -6,7 +6,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import jnu.econovation.ecoknockbecentral.reward.dto.RewardSettlementResult;
-import jnu.econovation.ecoknockbecentral.reward.dto.RewardTransactionResult;
+import jnu.econovation.ecoknockbecentral.reward.dto.RewardTransactionDTO;
 import jnu.econovation.ecoknockbecentral.reward.exception.RewardSubmissionUnknownException;
 import jnu.econovation.ecoknockbecentral.reward.exception.RewardTransactionException;
 import jnu.econovation.ecoknockbecentral.reward.model.entity.RewardDistribution;
@@ -29,7 +29,7 @@ public class RewardDistributionService {
     private final RewardTransactionService rewardTransactionService;
     private final RewardDistributionRepository rewardDistributionRepository;
 
-    public Optional<RewardTransactionResult> distribute(LocalDate settlementDate) {
+    public Optional<RewardTransactionDTO> distribute(LocalDate settlementDate) {
         String batchId = rewardTransactionService.createBatchId(settlementDate);
         Optional<RewardDistribution> existing = rewardDistributionRepository.findByBatchId(batchId);
         if (existing.isPresent() && !isClaimable(existing.get())) {
@@ -62,7 +62,7 @@ public class RewardDistributionService {
         }
     }
 
-    private Optional<RewardTransactionResult> claimAndSubmit(
+    private Optional<RewardTransactionDTO> claimAndSubmit(
             RewardDistribution distribution,
             RewardSettlementResult settlement
     ) {
@@ -91,11 +91,11 @@ public class RewardDistributionService {
         return submitAndConfirm(distribution, settlement);
     }
 
-    private Optional<RewardTransactionResult> submitAndConfirm(
+    private Optional<RewardTransactionDTO> submitAndConfirm(
             RewardDistribution distribution,
             RewardSettlementResult settlement
     ) {
-        RewardTransactionResult submitted;
+        RewardTransactionDTO submitted;
         try {
             submitted = rewardTransactionService.submit(settlement)
                     .orElseThrow(() -> failure("Reward settlement unexpectedly became empty"));
@@ -112,12 +112,12 @@ public class RewardDistributionService {
         return confirm(distribution, submitted);
     }
 
-    private Optional<RewardTransactionResult> resumeInFlight(
+    private Optional<RewardTransactionDTO> resumeInFlight(
             RewardDistribution distribution
     ) {
         return switch (distribution.getStatus()) {
-            case CONFIRMED -> Optional.of(toTransactionResult(distribution));
-            case SUBMITTED -> confirm(distribution, toTransactionResult(distribution));
+            case CONFIRMED -> Optional.of(toTransactionDTO(distribution));
+            case SUBMITTED -> confirm(distribution, toTransactionDTO(distribution));
             case SUBMITTING -> recoverSubmitting(distribution);
             default -> throw failure(
                     "Reward distribution is not in an in-flight state: "
@@ -126,7 +126,7 @@ public class RewardDistributionService {
         };
     }
 
-    private Optional<RewardTransactionResult> recoverSubmitting(
+    private Optional<RewardTransactionDTO> recoverSubmitting(
             RewardDistribution distribution
     ) {
         Optional<String> recoveredHash = rewardTransactionService
@@ -140,12 +140,12 @@ public class RewardDistributionService {
 
         distribution.markSubmitted(recoveredHash.get());
         distribution = rewardDistributionRepository.saveAndFlush(distribution);
-        return confirm(distribution, toTransactionResult(distribution));
+        return confirm(distribution, toTransactionDTO(distribution));
     }
 
-    private Optional<RewardTransactionResult> confirm(
+    private Optional<RewardTransactionDTO> confirm(
             RewardDistribution distribution,
-            RewardTransactionResult transaction
+            RewardTransactionDTO transaction
     ) {
         boolean confirmed = rewardTransactionService.waitForConfirmation(
                 transaction.transactionHash()
@@ -161,11 +161,11 @@ public class RewardDistributionService {
         return Optional.of(transaction);
     }
 
-    private RewardTransactionResult toTransactionResult(RewardDistribution distribution) {
+    private RewardTransactionDTO toTransactionDTO(RewardDistribution distribution) {
         BigInteger rewardDay = new BigInteger(
                 distribution.getSettlementDate().format(DateTimeFormatter.BASIC_ISO_DATE)
         );
-        return new RewardTransactionResult(
+        return new RewardTransactionDTO(
                 distribution.getBatchId(),
                 rewardDay,
                 distribution.getTransactionHash()

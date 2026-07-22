@@ -8,7 +8,7 @@ import java.util.Optional;
 import jnu.econovation.ecoknockbecentral.reward.client.RewardDistributorClient;
 import jnu.econovation.ecoknockbecentral.reward.dto.RewardRecipient;
 import jnu.econovation.ecoknockbecentral.reward.dto.RewardSettlementResult;
-import jnu.econovation.ecoknockbecentral.reward.dto.RewardTransactionResult;
+import jnu.econovation.ecoknockbecentral.reward.dto.RewardTransactionDTO;
 import jnu.econovation.ecoknockbecentral.reward.exception.RewardTransactionException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,7 +23,7 @@ public class RewardTransactionService {
 
     private final RewardDistributorClient rewardDistributorClient;
 
-    public Optional<RewardTransactionResult> submit(RewardSettlementResult settlement) {
+    public Optional<RewardTransactionDTO> submit(RewardSettlementResult settlement) {
         validateSettlement(settlement);
         if (settlement.recipients().isEmpty()) {
             return Optional.empty();
@@ -48,7 +48,7 @@ public class RewardTransactionService {
                 recipients,
                 amounts
         );
-        return Optional.of(new RewardTransactionResult(batchId, rewardDay, transactionHash));
+        return Optional.of(new RewardTransactionDTO(batchId, rewardDay, transactionHash));
     }
 
     public String createBatchId(LocalDate settlementDate) {

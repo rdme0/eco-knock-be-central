@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Optional;
 import jnu.econovation.ecoknockbecentral.reward.dto.RewardRecipient;
 import jnu.econovation.ecoknockbecentral.reward.dto.RewardSettlementResult;
-import jnu.econovation.ecoknockbecentral.reward.dto.RewardTransactionResult;
+import jnu.econovation.ecoknockbecentral.reward.dto.RewardTransactionDTO;
 import jnu.econovation.ecoknockbecentral.reward.exception.RewardSubmissionUnknownException;
 import jnu.econovation.ecoknockbecentral.reward.exception.RewardTransactionException;
 import jnu.econovation.ecoknockbecentral.reward.model.entity.RewardDistribution;
@@ -68,13 +68,13 @@ class RewardDistributionServiceTest {
     void persistsSubmittedHashBeforeConfirmingDistribution() {
         List<RewardDistributionStatus> savedStatuses = captureSavedStatuses();
         RewardSettlementResult settlement = settlement();
-        RewardTransactionResult submitted = transaction();
+        RewardTransactionDTO submitted = transactionDTO();
         when(settlementService.settle(SETTLEMENT_DATE)).thenReturn(settlement);
         when(repository.findByBatchId(BATCH_ID)).thenReturn(Optional.empty());
         when(transactionService.submit(settlement)).thenReturn(Optional.of(submitted));
         when(transactionService.waitForConfirmation(TRANSACTION_HASH)).thenReturn(true);
 
-        Optional<RewardTransactionResult> result = service.distribute(SETTLEMENT_DATE);
+        Optional<RewardTransactionDTO> result = service.distribute(SETTLEMENT_DATE);
 
         assertThat(result).contains(submitted);
         assertThat(savedStatuses).containsExactly(
@@ -142,7 +142,7 @@ class RewardDistributionServiceTest {
         RewardSettlementResult settlement = settlement();
         when(settlementService.settle(SETTLEMENT_DATE)).thenReturn(settlement);
         when(repository.findByBatchId(BATCH_ID)).thenReturn(Optional.empty());
-        when(transactionService.submit(settlement)).thenReturn(Optional.of(transaction()));
+        when(transactionService.submit(settlement)).thenReturn(Optional.of(transactionDTO()));
         when(transactionService.waitForConfirmation(TRANSACTION_HASH)).thenReturn(false);
 
         assertThatThrownBy(() -> service.distribute(SETTLEMENT_DATE))
@@ -163,9 +163,9 @@ class RewardDistributionServiceTest {
         when(repository.findByBatchId(BATCH_ID)).thenReturn(Optional.of(distribution));
         when(transactionService.waitForConfirmation(TRANSACTION_HASH)).thenReturn(true);
 
-        Optional<RewardTransactionResult> result = service.distribute(SETTLEMENT_DATE);
+        Optional<RewardTransactionDTO> result = service.distribute(SETTLEMENT_DATE);
 
-        assertThat(result).contains(transaction());
+        assertThat(result).contains(transactionDTO());
         assertThat(distribution.getStatus()).isEqualTo(RewardDistributionStatus.CONFIRMED);
         verify(transactionService, never()).submit(any());
         verifyNoInteractions(settlementService);
@@ -179,9 +179,9 @@ class RewardDistributionServiceTest {
         distribution.markConfirmed();
         when(repository.findByBatchId(BATCH_ID)).thenReturn(Optional.of(distribution));
 
-        Optional<RewardTransactionResult> result = service.distribute(SETTLEMENT_DATE);
+        Optional<RewardTransactionDTO> result = service.distribute(SETTLEMENT_DATE);
 
-        assertThat(result).contains(transaction());
+        assertThat(result).contains(transactionDTO());
         verify(transactionService, never()).submit(any());
         verify(transactionService, never()).waitForConfirmation(any());
         verifyNoInteractions(settlementService);
@@ -197,9 +197,9 @@ class RewardDistributionServiceTest {
                 .thenReturn(Optional.of(TRANSACTION_HASH));
         when(transactionService.waitForConfirmation(TRANSACTION_HASH)).thenReturn(true);
 
-        Optional<RewardTransactionResult> result = service.distribute(SETTLEMENT_DATE);
+        Optional<RewardTransactionDTO> result = service.distribute(SETTLEMENT_DATE);
 
-        assertThat(result).contains(transaction());
+        assertThat(result).contains(transactionDTO());
         assertThat(savedStatuses).containsExactly(
                 RewardDistributionStatus.SUBMITTED,
                 RewardDistributionStatus.CONFIRMED
@@ -237,7 +237,7 @@ class RewardDistributionServiceTest {
         when(settlementService.settle(SETTLEMENT_DATE)).thenReturn(empty);
         when(repository.findByBatchId(BATCH_ID)).thenReturn(Optional.empty());
 
-        Optional<RewardTransactionResult> result = service.distribute(SETTLEMENT_DATE);
+        Optional<RewardTransactionDTO> result = service.distribute(SETTLEMENT_DATE);
 
         assertThat(result).isEmpty();
         verify(repository).findByBatchId(BATCH_ID);
@@ -274,8 +274,8 @@ class RewardDistributionServiceTest {
         return distribution;
     }
 
-    private RewardTransactionResult transaction() {
-        return new RewardTransactionResult(BATCH_ID, REWARD_DAY, TRANSACTION_HASH);
+    private RewardTransactionDTO transactionDTO() {
+        return new RewardTransactionDTO(BATCH_ID, REWARD_DAY, TRANSACTION_HASH);
     }
 
     private RewardTransactionException failure(String message) {
