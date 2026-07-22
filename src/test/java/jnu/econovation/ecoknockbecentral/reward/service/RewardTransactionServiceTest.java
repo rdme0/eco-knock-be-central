@@ -51,16 +51,16 @@ class RewardTransactionServiceTest {
                 ),
                 12L
         );
-        when(rewardDistributorClient.distribute(anyString(), any(), anyList(), anyList()))
+        when(rewardDistributorClient.submit(anyString(), any(), anyList(), anyList()))
                 .thenReturn(TRANSACTION_HASH);
 
-        Optional<RewardTransactionResult> result = service.distribute(settlement);
+        Optional<RewardTransactionResult> result = service.submit(settlement);
 
         ArgumentCaptor<String> batchIdCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<BigInteger> rewardDayCaptor = ArgumentCaptor.forClass(BigInteger.class);
         ArgumentCaptor<List<String>> recipientsCaptor = ArgumentCaptor.forClass(List.class);
         ArgumentCaptor<List<BigInteger>> amountsCaptor = ArgumentCaptor.forClass(List.class);
-        org.mockito.Mockito.verify(rewardDistributorClient).distribute(
+        org.mockito.Mockito.verify(rewardDistributorClient).submit(
                 batchIdCaptor.capture(),
                 rewardDayCaptor.capture(),
                 recipientsCaptor.capture(),
@@ -90,7 +90,7 @@ class RewardTransactionServiceTest {
                 0L
         );
 
-        Optional<RewardTransactionResult> result = service.distribute(settlement);
+        Optional<RewardTransactionResult> result = service.submit(settlement);
 
         assertThat(result).isEmpty();
         verifyNoInteractions(rewardDistributorClient);
@@ -104,9 +104,29 @@ class RewardTransactionServiceTest {
                 6L
         );
 
-        assertThatThrownBy(() -> service.distribute(settlement))
+        assertThatThrownBy(() -> service.submit(settlement))
                 .isInstanceOf(RewardTransactionException.class)
                 .hasRootCauseMessage("Reward settlement total does not match recipients");
         verifyNoInteractions(rewardDistributorClient);
+    }
+
+    @Test
+    void delegatesTransactionConfirmation() {
+        when(rewardDistributorClient.waitForConfirmation(TRANSACTION_HASH)).thenReturn(true);
+
+        boolean confirmed = service.waitForConfirmation(TRANSACTION_HASH);
+
+        assertThat(confirmed).isTrue();
+    }
+
+    @Test
+    void delegatesTransactionHashRecovery() {
+        String batchId = service.createBatchId(SETTLEMENT_DATE);
+        when(rewardDistributorClient.findTransactionHashByBatchId(batchId))
+                .thenReturn(Optional.of(TRANSACTION_HASH));
+
+        Optional<String> recovered = service.findTransactionHashByBatchId(batchId);
+
+        assertThat(recovered).contains(TRANSACTION_HASH);
     }
 }

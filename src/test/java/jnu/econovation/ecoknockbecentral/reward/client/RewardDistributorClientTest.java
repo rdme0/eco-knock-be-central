@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.List;
 import jnu.econovation.ecoknockbecentral.reward.config.RewardTransactionConfig;
+import jnu.econovation.ecoknockbecentral.reward.exception.RewardSubmissionUnknownException;
 import jnu.econovation.ecoknockbecentral.reward.exception.RewardTransactionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,10 +22,12 @@ import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.Request;
 import org.web3j.protocol.core.Response;
+import org.web3j.protocol.core.methods.request.EthFilter;
 import org.web3j.protocol.core.methods.request.Transaction;
 import org.web3j.protocol.core.methods.response.EthCall;
 import org.web3j.protocol.core.methods.response.EthEstimateGas;
 import org.web3j.protocol.core.methods.response.EthGasPrice;
+import org.web3j.protocol.core.methods.response.EthLog;
 import org.web3j.protocol.core.methods.response.EthSendTransaction;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tx.TransactionManager;
@@ -50,6 +53,7 @@ class RewardDistributorClientTest {
     private Request<?, EthCall> ethCallRequest;
     private Request<?, EthGasPrice> gasPriceRequest;
     private Request<?, EthEstimateGas> estimateGasRequest;
+    private Request<?, EthLog> logsRequest;
     private RewardDistributorClient client;
 
     @BeforeEach
@@ -61,6 +65,7 @@ class RewardDistributorClientTest {
         ethCallRequest = mock(Request.class);
         gasPriceRequest = mock(Request.class);
         estimateGasRequest = mock(Request.class);
+        logsRequest = mock(Request.class);
         RewardTransactionConfig config = new RewardTransactionConfig(DISTRIBUTOR_ADDRESS);
         client = new RewardDistributorClient(
                 web3j,
@@ -76,6 +81,7 @@ class RewardDistributorClientTest {
         );
         doReturn(gasPriceRequest).when(web3j).ethGasPrice();
         doReturn(estimateGasRequest).when(web3j).ethEstimateGas(any(Transaction.class));
+        doReturn(logsRequest).when(web3j).ethGetLogs(any(EthFilter.class));
     }
 
     @Test
@@ -90,12 +96,11 @@ class RewardDistributorClientTest {
                 any(String.class),
                 eq(BigInteger.ZERO)
         )).thenReturn(submitted);
-        TransactionReceipt receipt = receipt("0x1");
-        when(receiptProcessor.waitForTransactionReceipt(TRANSACTION_HASH)).thenReturn(receipt);
 
-        String transactionHash = distribute();
+        String transactionHash = submit();
 
         assertThat(transactionHash).isEqualTo(TRANSACTION_HASH);
+        verify(receiptProcessor, never()).waitForTransactionReceipt(any());
     }
 
     @Test
@@ -103,7 +108,7 @@ class RewardDistributorClientTest {
         EthCall processed = ethCall(uint256Result(BigInteger.ONE));
         when(ethCallRequest.send()).thenReturn(processed);
 
-        assertThatThrownBy(this::distribute)
+        assertThatThrownBy(this::submit)
                 .isInstanceOf(RewardTransactionException.class)
                 .hasRootCauseMessage("Reward batch has already been processed");
         verify(transactionManager, never()).sendTransaction(any(), any(), any(), any(), any());
@@ -115,7 +120,7 @@ class RewardDistributorClientTest {
         EthCall operator = ethCall(addressResult(OTHER_ADDRESS));
         when(ethCallRequest.send()).thenReturn(processed, operator);
 
-        assertThatThrownBy(this::distribute)
+        assertThatThrownBy(this::submit)
                 .isInstanceOf(RewardTransactionException.class)
                 .hasRootCauseMessage("Configured signer is not the RewardDistributor operator");
         verify(transactionManager, never()).sendTransaction(any(), any(), any(), any(), any());
@@ -130,7 +135,7 @@ class RewardDistributorClientTest {
         when(simulation.getRevertReason()).thenReturn("execution reverted");
         when(ethCallRequest.send()).thenReturn(processed, operator, simulation);
 
-        assertThatThrownBy(this::distribute)
+        assertThatThrownBy(this::submit)
                 .isInstanceOf(RewardTransactionException.class)
                 .hasRootCauseMessage("execution reverted");
         verify(transactionManager, never()).sendTransaction(any(), any(), any(), any(), any());
@@ -142,27 +147,69 @@ class RewardDistributorClientTest {
         processed.setError(new Response.Error(-32000, "rpc failed"));
         when(ethCallRequest.send()).thenReturn(processed);
 
-        assertThatThrownBy(this::distribute)
+        assertThatThrownBy(this::submit)
                 .isInstanceOf(RewardTransactionException.class)
                 .hasRootCauseMessage("rpc failed");
     }
 
     @Test
-    void rejectsFailedReceipt() throws Exception {
+    void treatsSubmissionTransportErrorAsUnknown() throws Exception {
         prepareSuccessfulReadAndSimulation();
         prepareGasResponses();
+        IOException responseLost = new IOException("submission response lost");
         when(transactionManager.sendTransaction(any(), any(), any(), any(), any()))
-                .thenReturn(successfulSubmission());
+                .thenThrow(responseLost);
+
+        assertThatThrownBy(this::submit)
+                .isInstanceOf(RewardSubmissionUnknownException.class)
+                .hasCause(responseLost);
+    }
+
+    @Test
+    void findsTransactionHashFromDistributedEvent() throws IOException {
+        EthLog.LogObject log = new EthLog.LogObject();
+        log.setTransactionHash(TRANSACTION_HASH);
+        EthLog response = new EthLog();
+        response.setResult(List.of(log));
+        when(logsRequest.send()).thenReturn(response);
+
+        assertThat(client.findTransactionHashByBatchId(BATCH_ID))
+                .contains(TRANSACTION_HASH);
+    }
+
+    @Test
+    void returnsTrueWhenReceiptIsSuccessful() throws Exception {
+        when(receiptProcessor.waitForTransactionReceipt(TRANSACTION_HASH))
+                .thenReturn(receipt("0x1"));
+
+        boolean confirmed = client.waitForConfirmation(TRANSACTION_HASH);
+
+        assertThat(confirmed).isTrue();
+    }
+
+    @Test
+    void returnsFalseWhenReceiptIsReverted() throws Exception {
         when(receiptProcessor.waitForTransactionReceipt(TRANSACTION_HASH))
                 .thenReturn(receipt("0x0"));
 
-        assertThatThrownBy(this::distribute)
-                .isInstanceOf(RewardTransactionException.class)
-                .hasRootCauseMessage("Reward transaction reverted: " + TRANSACTION_HASH);
+        boolean confirmed = client.waitForConfirmation(TRANSACTION_HASH);
+
+        assertThat(confirmed).isFalse();
     }
 
-    private String distribute() {
-        return client.distribute(
+    @Test
+    void wrapsReceiptPollingError() throws Exception {
+        IOException pollingFailure = new IOException("receipt polling failed");
+        when(receiptProcessor.waitForTransactionReceipt(TRANSACTION_HASH))
+                .thenThrow(pollingFailure);
+
+        assertThatThrownBy(() -> client.waitForConfirmation(TRANSACTION_HASH))
+                .isInstanceOf(RewardTransactionException.class)
+                .hasCause(pollingFailure);
+    }
+
+    private String submit() {
+        return client.submit(
                 BATCH_ID,
                 REWARD_DAY,
                 List.of(RECIPIENT_ADDRESS),

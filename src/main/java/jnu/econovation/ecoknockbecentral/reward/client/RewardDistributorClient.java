@@ -3,16 +3,20 @@ package jnu.econovation.ecoknockbecentral.reward.client;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Optional;
 import jnu.econovation.ecoknockbecentral.reward.config.RewardTransactionConfig;
+import jnu.econovation.ecoknockbecentral.reward.exception.RewardSubmissionUnknownException;
 import jnu.econovation.ecoknockbecentral.reward.exception.RewardTransactionException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.web3j.abi.EventEncoder;
 import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.FunctionReturnDecoder;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Address;
 import org.web3j.abi.datatypes.Bool;
 import org.web3j.abi.datatypes.DynamicArray;
+import org.web3j.abi.datatypes.Event;
 import org.web3j.abi.datatypes.Function;
 import org.web3j.abi.datatypes.Type;
 import org.web3j.abi.datatypes.generated.Bytes32;
@@ -21,10 +25,13 @@ import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.Response;
 import org.web3j.protocol.core.methods.request.Transaction;
+import org.web3j.protocol.core.methods.request.EthFilter;
 import org.web3j.protocol.core.methods.response.EthCall;
 import org.web3j.protocol.core.methods.response.EthEstimateGas;
 import org.web3j.protocol.core.methods.response.EthGasPrice;
+import org.web3j.protocol.core.methods.response.EthLog;
 import org.web3j.protocol.core.methods.response.EthSendTransaction;
+import org.web3j.protocol.core.methods.response.Log;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.protocol.exceptions.TransactionException;
 import org.web3j.tx.TransactionManager;
@@ -38,13 +45,22 @@ public class RewardDistributorClient {
     private static final BigInteger ZERO = BigInteger.ZERO;
     private static final BigInteger GAS_BUFFER_PERCENT = BigInteger.valueOf(120L);
     private static final BigInteger PERCENT_BASE = BigInteger.valueOf(100L);
+    private static final Event REWARDS_DISTRIBUTED_EVENT = new Event(
+            "RewardsDistributed",
+            List.of(
+                    new TypeReference<Bytes32>(true) { },
+                    new TypeReference<Uint256>(true) { },
+                    new TypeReference<Uint256>() { },
+                    new TypeReference<Uint256>() { }
+            )
+    );
 
     private final Web3j web3j;
     private final RewardTransactionConfig config; // RewardDistributor Contract Address
     private final TransactionManager rewardTransactionManager;
     private final TransactionReceiptProcessor rewardTransactionReceiptProcessor;
 
-    public String distribute(
+    public String submit(
             String batchId,
             BigInteger rewardDay,
             List<String> recipients,
@@ -68,29 +84,74 @@ public class RewardDistributorClient {
             BigInteger gasPrice = getGasPrice();
             BigInteger gasLimit = estimateGas(encodedFunction, gasPrice);
 
-            EthSendTransaction submitted = rewardTransactionManager.sendTransaction(
+            return submitTransaction(gasPrice, gasLimit, encodedFunction);
+        } catch (IOException exception) {
+            throw new RewardTransactionException(exception);
+        }
+    }
+
+    public boolean waitForConfirmation(String transactionHash) {
+        try {
+            TransactionReceipt receipt = rewardTransactionReceiptProcessor
+                    .waitForTransactionReceipt(transactionHash);
+            return receipt.isStatusOK();
+        } catch (IOException | TransactionException exception) {
+            throw new RewardTransactionException(exception);
+        }
+    }
+
+    public Optional<String> findTransactionHashByBatchId(String batchId) {
+        EthFilter filter = new EthFilter(
+                DefaultBlockParameterName.EARLIEST,
+                DefaultBlockParameterName.LATEST,
+                config.distributorAddress()
+        );
+        filter.addSingleTopic(EventEncoder.encode(REWARDS_DISTRIBUTED_EVENT));
+        filter.addSingleTopic(batchId);
+
+        try {
+            EthLog response = web3j.ethGetLogs(filter).send();
+            ensureSuccessfulResponse(response);
+            for (EthLog.LogResult<?> logResult : response.getLogs()) {
+                Object value = logResult.get();
+                if (value instanceof Log log
+                        && log.getTransactionHash() != null
+                        && !log.getTransactionHash().isBlank()) {
+                    return Optional.of(log.getTransactionHash());
+                }
+            }
+            return Optional.empty();
+        } catch (IOException exception) {
+            throw new RewardTransactionException(exception);
+        }
+    }
+
+    private String submitTransaction(
+            BigInteger gasPrice,
+            BigInteger gasLimit,
+            String encodedFunction
+    ) {
+        EthSendTransaction submitted;
+        try {
+            submitted = rewardTransactionManager.sendTransaction(
                     gasPrice,
                     gasLimit,
                     config.distributorAddress(),
                     encodedFunction,
                     ZERO
             );
-            ensureSuccessfulResponse(submitted);
-
-            String transactionHash = submitted.getTransactionHash();
-            if (transactionHash == null || transactionHash.isBlank()) {
-                throw failure("Missing reward transaction hash");
-            }
-
-            TransactionReceipt receipt = rewardTransactionReceiptProcessor
-                    .waitForTransactionReceipt(transactionHash);
-            if (!receipt.isStatusOK()) {
-                throw failure("Reward transaction reverted: " + transactionHash);
-            }
-            return transactionHash;
-        } catch (IOException | TransactionException exception) {
-            throw new RewardTransactionException(exception);
+        } catch (IOException exception) {
+            throw new RewardSubmissionUnknownException(exception);
         }
+
+        if (submitted.hasError()) {
+            throw submissionUnknown(submitted.getError().getMessage());
+        }
+        String transactionHash = submitted.getTransactionHash();
+        if (transactionHash == null || transactionHash.isBlank()) {
+            throw submissionUnknown("Missing reward transaction hash");
+        }
+        return transactionHash;
     }
 
     private void verifyBatchNotProcessed(Bytes32 batchId) throws IOException {
@@ -225,5 +286,9 @@ public class RewardDistributorClient {
 
     private RewardTransactionException failure(String message) {
         return new RewardTransactionException(new IllegalStateException(message));
+    }
+
+    private RewardSubmissionUnknownException submissionUnknown(String message) {
+        return new RewardSubmissionUnknownException(new IllegalStateException(message));
     }
 }

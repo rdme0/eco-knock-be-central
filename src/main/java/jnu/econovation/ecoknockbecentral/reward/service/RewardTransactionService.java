@@ -1,6 +1,7 @@
 package jnu.econovation.ecoknockbecentral.reward.service;
 
 import java.math.BigInteger;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
@@ -22,13 +23,13 @@ public class RewardTransactionService {
 
     private final RewardDistributorClient rewardDistributorClient;
 
-    public Optional<RewardTransactionResult> distribute(RewardSettlementResult settlement) {
+    public Optional<RewardTransactionResult> submit(RewardSettlementResult settlement) {
         validateSettlement(settlement);
         if (settlement.recipients().isEmpty()) {
             return Optional.empty();
         }
 
-        String batchId = Hash.sha3String(BATCH_ID_PREFIX + settlement.settlementDate());
+        String batchId = createBatchId(settlement.settlementDate());
         BigInteger rewardDay = new BigInteger(
                 settlement.settlementDate().format(DateTimeFormatter.BASIC_ISO_DATE)
         );
@@ -41,13 +42,25 @@ public class RewardTransactionService {
                 .map(amount -> amount.multiply(TOKEN_UNIT))
                 .toList();
 
-        String transactionHash = rewardDistributorClient.distribute(
+        String transactionHash = rewardDistributorClient.submit(
                 batchId,
                 rewardDay,
                 recipients,
                 amounts
         );
         return Optional.of(new RewardTransactionResult(batchId, rewardDay, transactionHash));
+    }
+
+    public String createBatchId(LocalDate settlementDate) {
+        return Hash.sha3String(BATCH_ID_PREFIX + settlementDate);
+    }
+
+    public boolean waitForConfirmation(String transactionHash) {
+        return rewardDistributorClient.waitForConfirmation(transactionHash);
+    }
+
+    public Optional<String> findTransactionHashByBatchId(String batchId) {
+        return rewardDistributorClient.findTransactionHashByBatchId(batchId);
     }
 
     private void validateSettlement(RewardSettlementResult settlement) {
