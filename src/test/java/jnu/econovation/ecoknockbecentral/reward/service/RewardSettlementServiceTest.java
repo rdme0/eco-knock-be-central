@@ -18,6 +18,7 @@ import jnu.econovation.ecoknockbecentral.member.model.vo.Cohort;
 import jnu.econovation.ecoknockbecentral.member.model.vo.Role;
 import jnu.econovation.ecoknockbecentral.member.repository.MemberRepository;
 import jnu.econovation.ecoknockbecentral.reward.dto.RewardSettlementResult;
+import jnu.econovation.ecoknockbecentral.reward.model.vo.RewardType;
 import jnu.econovation.ecoknockbecentral.wallet.model.entity.MemberWallet;
 import jnu.econovation.ecoknockbecentral.wallet.repository.MemberWalletRepository;
 import jnu.econovation.ecoknockbecentral.whozin.dto.WhozinMembersInternalDTO;
@@ -104,6 +105,12 @@ class RewardSettlementServiceTest {
                     .satisfies(recipient -> {
                         assertThat(recipient.walletAddress()).isEqualTo(WALLET_ADDRESS);
                         assertThat(recipient.rewardAmount()).isEqualTo(expectedReward);
+                        assertThat(recipient.rewardDetails().getFirst().rewardType()).isEqualTo(RewardType.ATTENDANCE);
+                        if (presenceMinutes >= 60L) {
+                            assertThat(recipient.rewardDetails()).hasSize(2);
+                            assertThat(recipient.rewardDetails().get(1).rewardType()).isEqualTo(RewardType.STAY_DURATION);
+                            assertThat(recipient.rewardDetails().get(1).stayHours()).isEqualTo((int) (presenceMinutes / 60L));
+                        }
                     });
         }
     }
