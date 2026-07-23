@@ -443,6 +443,8 @@ sequenceDiagram
 | 회원 | `GET` | `/profile` | 현재 로그인 회원(게스트 포함)의 역할·기수·이름·활동 상태 조회. 게스트의 기수·활동 상태는 `null` |
 | 공기질 | `GET` | `/air-quality/timeseries` | 공기질 timeseries 조회 |
 | 공기질 | `GET` | `/air-quality/timeseries/history` | 공기질 과거 데이터 조회 |
+| 공기질 | `GET` | `/air-quality/timeseries/history/default` | 로그인한 회원·게스트의 공기질 과거 시계열 기본 해상도 조회 |
+| 공기질 | `PUT` | `/air-quality/timeseries/history/default` | 로그인한 회원·게스트의 공기질 과거 시계열 기본 해상도 저장 (`{"resolution":"15m"}`) |
 | 공기질 | `GET` | `/air-quality/stream` | 공기질 SSE 스트림 |
 | 바로가기 | `GET` | `/overview/shortcuts` | 사용자·게스트 바로가기와 grid size 조회 (`iconUrl`은 null 가능) |
 | 바로가기 | `PUT` | `/overview/shortcuts` | 사용자·게스트 바로가기 전체 교체 |
