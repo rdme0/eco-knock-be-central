@@ -1,6 +1,6 @@
 package jnu.econovation.ecoknockbecentral.common.exception.constants;
 
-import jnu.econovation.ecoknockbecentral.airquality.dto.rest.request.AirQualityResolution;
+import jnu.econovation.ecoknockbecentral.airquality.model.vo.AirQualityResolution;
 import jnu.econovation.ecoknockbecentral.airquality.dto.rest.request.GetTimeseriesHistoryRequest;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
