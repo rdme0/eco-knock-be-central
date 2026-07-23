@@ -15,9 +15,11 @@ import java.util.List;
 import java.util.Optional;
 import jnu.econovation.ecoknockbecentral.reward.client.RewardDistributorClient;
 import jnu.econovation.ecoknockbecentral.reward.dto.RewardRecipient;
+import jnu.econovation.ecoknockbecentral.reward.dto.RewardDetailDTO;
 import jnu.econovation.ecoknockbecentral.reward.dto.RewardSettlementResult;
 import jnu.econovation.ecoknockbecentral.reward.dto.RewardTransactionDTO;
 import jnu.econovation.ecoknockbecentral.reward.exception.RewardTransactionException;
+import jnu.econovation.ecoknockbecentral.reward.model.vo.RewardType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -46,8 +48,8 @@ class RewardTransactionServiceTest {
         RewardSettlementResult settlement = new RewardSettlementResult(
                 SETTLEMENT_DATE,
                 List.of(
-                        new RewardRecipient(FIRST_WALLET, 5L),
-                        new RewardRecipient(SECOND_WALLET, 7L)
+                        new RewardRecipient(1L, FIRST_WALLET, List.of(new RewardDetailDTO(RewardType.ATTENDANCE, 5L, null))),
+                        new RewardRecipient(2L, SECOND_WALLET, List.of(new RewardDetailDTO(RewardType.ATTENDANCE, 7L, null)))
                 ),
                 12L
         );
@@ -100,7 +102,7 @@ class RewardTransactionServiceTest {
     void rejectsSettlementWithMismatchedTotal() {
         RewardSettlementResult settlement = new RewardSettlementResult(
                 SETTLEMENT_DATE,
-                List.of(new RewardRecipient(FIRST_WALLET, 5L)),
+                List.of(new RewardRecipient(1L, FIRST_WALLET, List.of(new RewardDetailDTO(RewardType.ATTENDANCE, 5L, null)))),
                 6L
         );
 

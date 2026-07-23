@@ -28,6 +28,7 @@ public class RewardDistributionService {
     private final RewardSettlementService rewardSettlementService;
     private final RewardTransactionService rewardTransactionService;
     private final RewardDistributionRepository rewardDistributionRepository;
+    private final RewardHistoryService rewardHistoryService;
 
     public Optional<RewardTransactionDTO> distribute(LocalDate settlementDate) {
         String batchId = rewardTransactionService.createBatchId(settlementDate);
@@ -43,6 +44,7 @@ public class RewardDistributionService {
         RewardDistribution distribution = existing.orElseGet(
                 () -> createOrLoadPending(settlement)
         );
+        rewardHistoryService.savePlannedHistories(distribution, settlement.recipients());
         return claimAndSubmit(distribution, settlement);
     }
 

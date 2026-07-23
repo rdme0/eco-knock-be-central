@@ -12,8 +12,10 @@ import java.util.UUID;
 import jnu.econovation.ecoknockbecentral.member.model.entity.Member;
 import jnu.econovation.ecoknockbecentral.member.model.vo.Role;
 import jnu.econovation.ecoknockbecentral.member.repository.MemberRepository;
+import jnu.econovation.ecoknockbecentral.reward.dto.RewardDetailDTO;
 import jnu.econovation.ecoknockbecentral.reward.dto.RewardRecipient;
 import jnu.econovation.ecoknockbecentral.reward.dto.RewardSettlementResult;
+import jnu.econovation.ecoknockbecentral.reward.model.vo.RewardType;
 import jnu.econovation.ecoknockbecentral.wallet.model.entity.MemberWallet;
 import jnu.econovation.ecoknockbecentral.wallet.repository.MemberWalletRepository;
 import jnu.econovation.ecoknockbecentral.whozin.dto.WhozinUser;
@@ -65,8 +67,8 @@ public class RewardSettlementService {
                 continue;
             }
 
-            long rewardAmount = calculateReward(whozinUser.getPresenceDuration());
-            if (rewardAmount == 0L) {
+            List<RewardDetailDTO> rewardDetails = calculateRewardDetails(whozinUser.getPresenceDuration());
+            if (rewardDetails.isEmpty()) {
                 continue;
             }
 
@@ -103,7 +105,9 @@ public class RewardSettlementService {
                 continue;
             }
 
-            recipients.add(new RewardRecipient(wallet.getWalletAddress(), rewardAmount));
+            RewardRecipient recipient = new RewardRecipient(member.getId(), wallet.getWalletAddress(), rewardDetails);
+            recipients.add(recipient);
+            long rewardAmount = recipient.rewardAmount();
             totalRewardAmount = Math.addExact(totalRewardAmount, rewardAmount);
         }
 
@@ -118,13 +122,22 @@ public class RewardSettlementService {
                 .toList();
     }
 
-    private long calculateReward(Duration presenceDuration) {
+    private List<RewardDetailDTO> calculateRewardDetails(Duration presenceDuration) {
         long presenceMinutes = presenceDuration.toMinutes();
         if (presenceMinutes < MINIMUM_ATTENDANCE_MINUTES) {
-            return 0L;
+            return List.of();
         }
 
         long fullHours = presenceMinutes / MINUTES_PER_HOUR;
-        return Math.addExact(ATTENDANCE_REWARD, Math.multiplyExact(fullHours, HOURLY_REWARD));
+        List<RewardDetailDTO> rewardDetails = new ArrayList<>();
+        rewardDetails.add(new RewardDetailDTO(RewardType.ATTENDANCE, ATTENDANCE_REWARD, null));
+        if (fullHours > 0L) {
+            rewardDetails.add(new RewardDetailDTO(
+                    RewardType.STAY_DURATION,
+                    Math.multiplyExact(fullHours, HOURLY_REWARD),
+                    Math.toIntExact(fullHours)
+            ));
+        }
+        return rewardDetails;
     }
 }
