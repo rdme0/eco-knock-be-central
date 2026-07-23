@@ -68,6 +68,9 @@ blockchain:
   ethereum-sepolia:
     rpc-url: ${SEPOLIA_RPC_URL}
     krt-token-address: ${SEPOLIA_KRT_TOKEN_ADDRESS}
+    reward-transaction:
+      distributor-address: ${SEPOLIA_REWARD_DISTRIBUTOR_ADDRESS}
+      operator-private-key: ${SEPOLIA_REWARD_OPERATOR_PRIVATE_KEY}
 
 ai-server:
   base-url: ${AI_SERVER_HOST}
