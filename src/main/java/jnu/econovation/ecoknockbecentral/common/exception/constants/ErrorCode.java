@@ -30,6 +30,7 @@ public enum ErrorCode {
     ENCRYPTION_ERROR(Domain.SECURITY, HttpStatus.INTERNAL_SERVER_ERROR, 1, "암호화/복호화 중 예상치 못한 에러가 발생했습니다."),
     UNKNOWN_FILTER_ERROR(Domain.SECURITY, HttpStatus.INTERNAL_SERVER_ERROR, 2, "Spring Security Filter 에서 예상치 못한 에러가 발생했습니다."),
     UNAUTHORIZED(Domain.SECURITY, HttpStatus.UNAUTHORIZED, 1, "인증이 필요합니다."),
+    FORBIDDEN(Domain.SECURITY, HttpStatus.FORBIDDEN, 1, "접근 권한이 없습니다."),
 
     // --- MEMBER ---
     MEMBER_NOT_FOUND(Domain.MEMBER, HttpStatus.INTERNAL_SERVER_ERROR, 1, "id가 %d인 회원을 찾을 수 없습니다."),
