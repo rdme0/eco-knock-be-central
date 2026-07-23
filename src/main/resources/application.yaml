@@ -76,6 +76,11 @@ reward:
   scheduler:
     enabled: ${REWARD_SCHEDULER_ENABLED:false}
 
+wallet:
+  ranking:
+    scheduler:
+      enabled: ${WALLET_RANKING_SCHEDULER_ENABLED:false}
+
 ai-server:
   base-url: ${AI_SERVER_HOST}
   timeout: 30s

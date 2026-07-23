@@ -10,8 +10,12 @@ import jnu.econovation.ecoknockbecentral.common.security.dto.EcoKnockUserDetails
 import jnu.econovation.ecoknockbecentral.member.dto.MemberInfoDTO;
 import jnu.econovation.ecoknockbecentral.member.model.vo.Role;
 import jnu.econovation.ecoknockbecentral.wallet.dto.response.WalletBalanceResponse;
+import jnu.econovation.ecoknockbecentral.wallet.dto.response.WalletRankingResponse;
 import jnu.econovation.ecoknockbecentral.wallet.model.vo.WalletType;
 import jnu.econovation.ecoknockbecentral.wallet.service.WalletBalanceService;
+import jnu.econovation.ecoknockbecentral.wallet.service.WalletRankingService;
+import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +25,8 @@ class WalletControllerTest {
     @Test
     void delegatesAuthenticatedMemberIdAndWrapsResponse() {
         WalletBalanceService service = mock(WalletBalanceService.class);
-        WalletController controller = new WalletController(service);
+        WalletRankingService rankingService = mock(WalletRankingService.class);
+        WalletController controller = new WalletController(service, rankingService);
         MemberInfoDTO memberInfo = new MemberInfoDTO(
                 7L,
                 700L,
@@ -48,5 +53,29 @@ class WalletControllerTest {
         assertThat(response.getBody().isSuccess()).isTrue();
         assertThat(response.getBody().result()).isEqualTo(expected);
         verify(service).getWalletBalance(7L);
+    }
+
+    @Test
+    void delegatesRankingRequestAndWrapsResponse() {
+        WalletBalanceService balanceService = mock(WalletBalanceService.class);
+        WalletRankingService rankingService = mock(WalletRankingService.class);
+        WalletController controller = new WalletController(balanceService, rankingService);
+        WalletRankingResponse expected = new WalletRankingResponse(
+                "KRT",
+                Instant.parse("2026-07-23T01:00:00Z"),
+                List.of()
+        );
+        when(rankingService.getRankings(new jnu.econovation.ecoknockbecentral.wallet.dto.request.WalletRankingRequest(3)))
+                .thenReturn(expected);
+
+        ResponseEntity<CommonResponse<WalletRankingResponse>> response =
+                controller.getWalletRankings(3);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().result()).isEqualTo(expected);
+        verify(rankingService).getRankings(
+                new jnu.econovation.ecoknockbecentral.wallet.dto.request.WalletRankingRequest(3)
+        );
     }
 }
