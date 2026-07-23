@@ -73,6 +73,7 @@ class GuestAuthorizationE2ETest(
         val updatedHistorySetting = requestBody("/air-quality/timeseries/history/default", accessToken)
 
         val aiStatus = requestStatus("/ai/chat", accessToken, org.springframework.http.HttpMethod.POST)
+        val aiHistoryStatus = requestStatus("/ai/chat/history", accessToken)
         val walletStatus = requestStatus("/wallet/me", accessToken)
         val adminStatus = requestStatus("/admin", accessToken)
         val unregisteredAdminStatus = requestStatus("/admin/not-registered", accessToken)
@@ -86,6 +87,7 @@ class GuestAuthorizationE2ETest(
         assertThat(historySettingUpdateStatus).isEqualTo(HttpStatus.OK)
         assertThat(updatedHistorySetting).contains("\"resolution\":\"1h\"")
         assertThat(aiStatus).isEqualTo(HttpStatus.FORBIDDEN)
+        assertThat(aiHistoryStatus).isEqualTo(HttpStatus.FORBIDDEN)
         assertThat(walletStatus).isEqualTo(HttpStatus.FORBIDDEN)
         assertThat(adminStatus).isEqualTo(HttpStatus.FORBIDDEN)
         assertThat(unregisteredAdminStatus).isEqualTo(HttpStatus.FORBIDDEN)
@@ -99,6 +101,8 @@ class GuestAuthorizationE2ETest(
 
         assertThat(requestPutStatus("/overview/layout", user, """{"gridSize":2}""")).isEqualTo(HttpStatus.OK)
         assertThat(requestPutStatus("/overview/layout", admin, """{"gridSize":2}""")).isEqualTo(HttpStatus.OK)
+        assertThat(requestStatus("/ai/chat/history", user)).isEqualTo(HttpStatus.OK)
+        assertThat(requestStatus("/ai/chat/history", admin)).isEqualTo(HttpStatus.OK)
         assertThat(requestStatus("/admin/not-registered", user)).isEqualTo(HttpStatus.FORBIDDEN)
     }
 
