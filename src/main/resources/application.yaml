@@ -72,6 +72,10 @@ blockchain:
       distributor-address: ${SEPOLIA_REWARD_DISTRIBUTOR_ADDRESS}
       operator-private-key: ${SEPOLIA_REWARD_OPERATOR_PRIVATE_KEY}
 
+reward:
+  scheduler:
+    enabled: ${REWARD_SCHEDULER_ENABLED:false}
+
 ai-server:
   base-url: ${AI_SERVER_HOST}
   timeout: 30s
