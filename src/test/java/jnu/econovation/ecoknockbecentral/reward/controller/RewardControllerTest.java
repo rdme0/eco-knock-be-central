@@ -18,6 +18,7 @@ import jnu.econovation.ecoknockbecentral.reward.service.RewardHistoryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -35,13 +36,13 @@ class RewardControllerTest {
         )));
         when(service.getMyHistory(7L, new RewardHistoryRequest(1, 5))).thenReturn(expected);
 
-        ResponseEntity<CommonResponse<Page<RewardHistoryResponse>>> response =
+        ResponseEntity<CommonResponse<PagedModel<RewardHistoryResponse>>> response =
                 controller.getMyRewardHistory(1, 5, userDetails);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().isSuccess()).isTrue();
-        assertThat(response.getBody().result()).isEqualTo(expected);
+        assertThat(response.getBody().result().getContent()).containsExactlyElementsOf(expected.getContent());
         verify(service).getMyHistory(7L, new RewardHistoryRequest(1, 5));
     }
 }

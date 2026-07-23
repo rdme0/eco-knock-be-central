@@ -1,6 +1,7 @@
 package jnu.econovation.ecoknockbecentral.common.security.config;
 
 import jakarta.servlet.http.HttpServletResponse;
+import jnu.econovation.ecoknockbecentral.common.security.handler.Rest403Handler;
 import jnu.econovation.ecoknockbecentral.common.security.filter.ApiDocAccessFilter;
 import jnu.econovation.ecoknockbecentral.common.security.filter.JwtAuthFilter;
 import jnu.econovation.ecoknockbecentral.common.security.filter.SSORedirectParamFilter;
@@ -57,6 +58,7 @@ public class SecurityConfig {
     private final ApiDocAccessFilter apiDocAccessFilter;
     private final JwtAuthFilter jwtAuthFilter;
     private final SSORedirectParamFilter ssoRedirectParamFilter;
+    private final Rest403Handler rest403Handler;
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -134,7 +136,7 @@ public class SecurityConfig {
                                 return;
                             }
 
-                            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                            rest403Handler.handle(request, response, accessDeniedException);
                         })
                 )
                 .sessionManagement(session ->
