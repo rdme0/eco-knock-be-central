@@ -18,12 +18,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import jnu.econovation.ecoknockbecentral.reward.dto.RewardRecipient;
+import jnu.econovation.ecoknockbecentral.reward.dto.RewardDetailDTO;
 import jnu.econovation.ecoknockbecentral.reward.dto.RewardSettlementResult;
 import jnu.econovation.ecoknockbecentral.reward.dto.RewardTransactionDTO;
 import jnu.econovation.ecoknockbecentral.reward.exception.RewardSubmissionUnknownException;
 import jnu.econovation.ecoknockbecentral.reward.exception.RewardTransactionException;
 import jnu.econovation.ecoknockbecentral.reward.model.entity.RewardDistribution;
 import jnu.econovation.ecoknockbecentral.reward.model.vo.RewardDistributionStatus;
+import jnu.econovation.ecoknockbecentral.reward.model.vo.RewardType;
 import jnu.econovation.ecoknockbecentral.reward.repository.RewardDistributionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,6 +46,7 @@ class RewardDistributionServiceTest {
     private RewardSettlementService settlementService;
     private RewardTransactionService transactionService;
     private RewardDistributionRepository repository;
+    private RewardHistoryService rewardHistoryService;
     private RewardDistributionService service;
 
     @BeforeEach
@@ -51,10 +54,12 @@ class RewardDistributionServiceTest {
         settlementService = mock(RewardSettlementService.class);
         transactionService = mock(RewardTransactionService.class);
         repository = mock(RewardDistributionRepository.class);
+        rewardHistoryService = mock(RewardHistoryService.class);
         service = new RewardDistributionService(
                 settlementService,
                 transactionService,
-                repository
+                repository,
+                rewardHistoryService
         );
 
         when(repository.saveAndFlush(any(RewardDistribution.class)))
@@ -77,6 +82,9 @@ class RewardDistributionServiceTest {
         Optional<RewardTransactionDTO> result = service.distribute(SETTLEMENT_DATE);
 
         assertThat(result).contains(submitted);
+        org.mockito.InOrder inOrder = org.mockito.Mockito.inOrder(rewardHistoryService, transactionService);
+        inOrder.verify(rewardHistoryService).savePlannedHistories(any(RewardDistribution.class), any());
+        inOrder.verify(transactionService).submit(settlement);
         assertThat(savedStatuses).containsExactly(
                 RewardDistributionStatus.PENDING,
                 RewardDistributionStatus.SUBMITTED,
@@ -100,6 +108,7 @@ class RewardDistributionServiceTest {
         assertThat(distribution.getStatus()).isEqualTo(RewardDistributionStatus.SUBMITTED);
         verify(transactionService, never()).submit(any());
         verifyNoInteractions(settlementService);
+        verifyNoInteractions(rewardHistoryService);
     }
 
     @Test
@@ -168,6 +177,7 @@ class RewardDistributionServiceTest {
         assertThat(result).contains(transactionDTO());
         assertThat(distribution.getStatus()).isEqualTo(RewardDistributionStatus.CONFIRMED);
         verify(transactionService, never()).submit(any());
+        verifyNoInteractions(rewardHistoryService);
         verifyNoInteractions(settlementService);
     }
 
@@ -185,6 +195,7 @@ class RewardDistributionServiceTest {
         verify(transactionService, never()).submit(any());
         verify(transactionService, never()).waitForConfirmation(any());
         verifyNoInteractions(settlementService);
+        verifyNoInteractions(rewardHistoryService);
     }
 
     @Test
@@ -205,6 +216,7 @@ class RewardDistributionServiceTest {
                 RewardDistributionStatus.CONFIRMED
         );
         verify(transactionService, never()).submit(any());
+        verifyNoInteractions(rewardHistoryService);
         verifyNoInteractions(settlementService);
     }
 
@@ -241,6 +253,7 @@ class RewardDistributionServiceTest {
 
         assertThat(result).isEmpty();
         verify(repository).findByBatchId(BATCH_ID);
+        verifyNoInteractions(rewardHistoryService);
     }
 
     private List<RewardDistributionStatus> captureSavedStatuses() {
@@ -258,7 +271,7 @@ class RewardDistributionServiceTest {
     private RewardSettlementResult settlement() {
         return new RewardSettlementResult(
                 SETTLEMENT_DATE,
-                List.of(new RewardRecipient(WALLET_ADDRESS, 5L)),
+                List.of(new RewardRecipient(1L, WALLET_ADDRESS, List.of(new RewardDetailDTO(RewardType.ATTENDANCE, 5L, null)))),
                 5L
         );
     }
